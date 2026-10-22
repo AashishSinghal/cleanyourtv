@@ -24,7 +24,7 @@ case "${1:-}" in
     python3 -I - "$T/config.json" "$SHOTS/.theme.json" <<'EOF'
 import json, sys
 d = json.load(open(sys.argv[1]))
-d["hidden_apps"] = sorted(set(d.get("hidden_apps", [])) | {"com.android.vending", "com.google.android.youtube.tv", "com.android.tv.settings"})
+d["hidden_apps"] = sorted(set(d.get("hidden_apps", [])) | {"com.android.vending", "com.google.android.youtube.tv", "com.android.tv.settings", "com.mediatek.wwtv.tvcenter"})
 json.dump(d, open(sys.argv[2], "w"), indent=2)
 EOF
     put "$SHOTS/.theme.json" config.json
