@@ -18,12 +18,27 @@ import android.widget.Toast;
  * closes the panel.
  */
 public final class QuickSettingsActivity extends Activity {
+    /** my-tv home_layout "calm": the screen y of the Settings button's top; the panel opens just above it. */
+    static final String EXTRA_ABOVE_Y = "com.gathin.tvhome.extra.ABOVE_Y";
+    /** With EXTRA_ABOVE_Y: the panel's end margin in px, to line up with the button row. */
+    static final String EXTRA_END_MARGIN = "com.gathin.tvhome.extra.END_MARGIN";
 
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         setContentView(R.layout.activity_quick_settings);
         findViewById(R.id.scrim).setOnClickListener(v -> finish());
+        int aboveY = getIntent().getIntExtra(EXTRA_ABOVE_Y, -1);
+        if (aboveY > 0) {
+            // The calm layout keeps its buttons above the dock, not in the top bar: rise from the button instead.
+            View panel = findViewById(R.id.panel);
+            android.widget.FrameLayout.LayoutParams lp = (android.widget.FrameLayout.LayoutParams) panel.getLayoutParams();
+            lp.gravity = android.view.Gravity.BOTTOM | android.view.Gravity.END;
+            lp.topMargin = 0;
+            lp.bottomMargin = getResources().getDisplayMetrics().heightPixels - aboveY
+                    + Math.round(10 * getResources().getDisplayMetrics().density);
+            lp.setMarginEnd(getIntent().getIntExtra(EXTRA_END_MARGIN, lp.getMarginEnd()));
+        }
         LinearLayout rows = findViewById(R.id.rows);
         addRow(rows, R.drawable.ic_settings, R.string.tv_settings, 0, SystemSettings.intent(this, Settings.ACTION_SETTINGS));
         addRow(rows, R.drawable.ic_picture, R.string.quick_picture, 0, SystemSettings.intent(this, Settings.ACTION_DISPLAY_SETTINGS));

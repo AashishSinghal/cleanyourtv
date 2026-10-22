@@ -623,10 +623,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         // my-tv: settings_key_panel also covers the Settings pill, for remotes without a Settings button.
         btnSettings.setOnClickListener(v -> {
-            if (launcherSettingsButton) startActivityForResult(
-                    new Intent(this, LauncherSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST);
-            else open(settingsKeyPanel ? new Intent(this, QuickSettingsActivity.class)
-                    : systemIntent(Settings.ACTION_SETTINGS));
+            if (launcherSettingsButton) {
+                startActivityForResult(new Intent(this, LauncherSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST);
+                return;
+            }
+            if (!settingsKeyPanel) {
+                open(systemIntent(Settings.ACTION_SETTINGS));
+                return;
+            }
+            Intent panel = new Intent(this, QuickSettingsActivity.class);
+            if (calm != null) calm.anchorPanel(panel, btnSettings);
+            open(panel);
         });
         btnReorder = findViewById(R.id.btnReorder);
         btnReorder.setOnClickListener(v -> toggleReorder());
@@ -2517,6 +2524,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 }
             }
         } catch (Exception ignored) {
+        }
+        if (calm != null) {
+            // Calm: a round icon with a green dot while online; the name and state only as the focus label.
+            calm.updateNetwork(btnWifi, icon, online ? text : getString(R.string.wifi), online);
+            return;
         }
         // With a VPN app configured, a VPN that is down matters too: show a red "VPN off" capsule then.
         boolean vpnDown = !vpn && online && !vpnApp.isEmpty();
