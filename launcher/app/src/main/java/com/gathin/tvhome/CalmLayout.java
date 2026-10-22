@@ -193,7 +193,11 @@ final class CalmLayout {
         ((ViewGroup) topButtons.getParent()).removeView(topButtons);
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.RIGHT);
-        lp.rightMargin = dp(64);
+        // The root clips each child to its bounds (the top bar's containers did not): room around the row for a
+        // focused button's 1.06x lift, taken back out of the margin so the row's edge stays on the 64dp line.
+        int room = dp(6);
+        topButtons.setPadding(room, room, room, room);
+        lp.rightMargin = dp(64) - room;
         root.addView(topButtons, lp);
         // Until the dock is laid out, keep them out of sight rather than in the top corner.
         topButtons.setAlpha(0f);
@@ -455,11 +459,39 @@ final class CalmLayout {
         return headCenter(dockTopInRoot) - hero.getHeight() / 2f;
     }
 
-    /** Puts the system buttons on the caption's line. */
+    /**
+     * While the grid scrolls: back on the caption line above where the dock's tiles are now, or, with the dock
+     * scrolled out of view, moved by the scroll like the standard focus highlight.
+     */
+    void followDock(androidx.recyclerview.widget.RecyclerView grid, int dy) {
+        androidx.recyclerview.widget.RecyclerView.ViewHolder dock = grid.findViewHolderForAdapterPosition(0);
+        View card = dock == null ? null : dock.itemView.findViewById(R.id.card);
+        if (card == null || card.getHeight() == 0) {
+            topButtons.setTranslationY(topButtons.getTranslationY() - dy);
+            return;
+        }
+        android.graphics.Rect r = new android.graphics.Rect(0, 0, card.getWidth(), card.getHeight());
+        root.offsetDescendantRectToMyCoords(card, r);
+        topButtons.setY(headCenter(r.top) - topButtons.getHeight() / 2f);
+    }
+
+    private boolean buttonsShown;
+
+    /** Puts the system buttons on the caption's line and shows them with it. */
     void placeButtons(float dockTopInRoot) {
-        float y = headCenter(dockTopInRoot) - topButtons.getHeight() / 2f;
-        topButtons.setY(y);
-        if (topButtons.getAlpha() < 1f) topButtons.animate().alpha(1f).setDuration(200).start();
+        topButtons.setY(headCenter(dockTopInRoot) - topButtons.getHeight() / 2f);
+        if (buttonsShown) return;
+        buttonsShown = true;
+        topButtons.animate().cancel();
+        topButtons.animate().alpha(1f).setDuration(200).start();
+    }
+
+    /** With the caption: browsing the rows below the dock hides the act band, as the standard shelf hides. */
+    void hideButtons() {
+        if (!buttonsShown) return;
+        buttonsShown = false;
+        topButtons.animate().cancel();
+        topButtons.animate().alpha(0f).setDuration(160).start();
     }
 
     // ---- the weather, mirrored on the right --------------------------------------------------------
@@ -508,6 +540,30 @@ final class CalmLayout {
         hours.setBackground(new HairlineTop(0x24FFFFFF, Math.max(1, Math.round(density / 2))));
         hours.setPadding(0, dp(9), 0, 0);
         ((LinearLayout.LayoutParams) hours.getLayoutParams()).topMargin = dp(13);
+
+        // After the whole pass: the weather is laid out before the header's block, which has no height yet then.
+        root.getViewTreeObserver().addOnGlobalLayoutListener(() -> fitHeaderToWeather(panel));
+    }
+
+    /**
+     * The weather floats over the screen, so the header (the clock's block) grows to reach its bottom: the grid
+     * then starts below it, and rows scrolled up slide under the header's edge as in the standard layout instead
+     * of over the forecast. The dock stays put, since its parking padding is measured from the grid's bottom.
+     */
+    private void fitHeaderToWeather(View panel) {
+        View left = activity.findViewById(R.id.leftBlock);
+        int need = 0;
+        if (panel.getVisibility() == View.VISIBLE && panel.getHeight() > 0 && left.getHeight() > 0) {
+            android.graphics.Rect p = new android.graphics.Rect(0, 0, panel.getWidth(), panel.getHeight());
+            root.offsetDescendantRectToMyCoords(panel, p);
+            android.graphics.Rect h = new android.graphics.Rect(0, 0, left.getWidth(), left.getHeight());
+            root.offsetDescendantRectToMyCoords(left, h);
+            need = p.bottom - h.top;
+        }
+        if (left.getMinimumHeight() != need) {
+            left.setMinimumHeight(need);
+            left.requestLayout();
+        }
     }
 
     /** A 1 px line along the top edge, the mockup's hairline above the hours. */

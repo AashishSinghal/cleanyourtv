@@ -577,6 +577,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         grid.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView rv, int dx, int dy) {
+                // Calm: the system buttons ride on the dock's caption line, so they scroll with it.
+                if (calm != null) calm.followDock(rv, dy);
                 if (!glassShown) return;
                 glassTargetY -= dy;
                 glassScrollShift -= dy;
@@ -1991,6 +1993,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         heroArt.setAlpha(0f);
         heroShown = false;
         hideWeather();
+        if (calm != null) calm.hideButtons();   // the act band goes with the caption
         if (!ambientGlow) return;
         if (!animations || reducedMotion) {
             setAmbient(color);
@@ -2016,6 +2019,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         heroArt.animate().cancel();
         heroShown = false;
         hideWeather();
+        if (calm != null) calm.hideButtons();   // the act band goes with the caption
         if (animations && !reducedMotion) {
             hero.animate().alpha(0f).setDuration(160).start();
             if (ambientGlow) ambient.animate().alpha(0f).setDuration(300).start();
