@@ -1,0 +1,24 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'local.homereturn'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'local.homereturn'
+        minSdk 26
+        targetSdk 34
+        versionCode 2
+        versionName '1.1'
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            // Sideloaded over ADB only: signed with the same local debug key as the launcher build.
+            signingConfig signingConfigs.debug
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Home Return</string>
+    <string name="description">Opens your own launcher when Amazon\'s home screen appears (press Home twice quickly to stay on Amazon\'s home), and opens YouTube when a remote app button leads to an app that is not available.</string>
+</resources>
