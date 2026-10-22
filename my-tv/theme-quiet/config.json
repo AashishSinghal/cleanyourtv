@@ -26,5 +26,33 @@
   "inputs_icon_only": true,
   "wifi_status_color": true,
   "settings_key_panel": true,
-  "quiet_buttons": true
+  "quiet_buttons": true,
+  "wallpaper_moods": {
+    "morning": [
+      "06-above-the-clouds.jpg",
+      "07-mirror-lake.jpg",
+      "08-tea-hills.jpg",
+      "11-balloon-sunrise.jpg"
+    ],
+    "evening": [
+      "01-dusk-peaks.jpg",
+      "02-golden-coast.jpg",
+      "05-dunes.jpg",
+      "09-alpenglow.jpg",
+      "14-autumn-valley.jpg"
+    ],
+    "night": [
+      "03-moon-lake.jpg",
+      "04-aurora.jpg",
+      "10-city-lights.jpg",
+      "13-lighthouse-coast.jpg"
+    ],
+    "rain": [
+      "12-monsoon.jpg"
+    ],
+    "fog": [
+      "06-above-the-clouds.jpg",
+      "08-tea-hills.jpg"
+    ]
+  }
 }
