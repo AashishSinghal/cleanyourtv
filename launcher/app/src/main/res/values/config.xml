@@ -361,4 +361,17 @@
          colour washes down from the top edge and fades to black, brightest along the top). The cinematic shelf
          keeps its own glow. Can also be set with "glow_style": "horizon" in a theme's config.json. -->
     <string name="glow_style" translatable="false">radial</string>
+
+    <!-- ===== my-tv keys (personal fork). Each one is off, or upstream's behaviour, until set here or in a theme. ===== -->
+
+    <!-- Weather on the cinematic shelf, from Open-Meteo (open-meteo.com, free, no account): the launcher sends only the
+         coordinates below, about once an hour, and keeps the last answer so Home shows it at once. It needs weather
+         true and both coordinates; while either is missing the launcher stays off the network. Ported from
+         manas-04/cleanyourtv (ca9ad37). A theme can set "weather", "weather_place", "weather_latitude",
+         "weather_longitude" and "weather_fahrenheit". -->
+    <bool name="weather">false</bool>
+    <string name="weather_place" translatable="false"></string>
+    <string name="weather_latitude" translatable="false"></string>
+    <string name="weather_longitude" translatable="false"></string>
+    <bool name="weather_fahrenheit">false</bool>
 </resources>

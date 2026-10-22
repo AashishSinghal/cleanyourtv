@@ -90,6 +90,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * tvOS style home: black, a pinned dock row, an app grid, and one glass highlight that springs between tiles.
@@ -157,6 +159,19 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private boolean heroDotsShown = true;
     /** The artwork's opacity behind the cinematic shelf (config.xml cinematic_art); 0 leaves it out. */
     private float heroArtAlpha = 0.5f;
+    /** Weather on the shelf (config weather, weather_latitude/longitude); null while it is off. */
+    private WeatherPanel weatherPanel;
+    private Weather weather;
+    private String weatherKey;
+    private double weatherLatitude, weatherLongitude;
+    private boolean weatherFahrenheit;
+    private boolean weatherLoading;
+    /** When the last request went out; static so a recreate() does not ask again at once. */
+    private static long lastWeatherAttempt;
+    /** Where the dock was on the last shelf, so the weather can line up with it when it arrives later. */
+    private float lastDockTop;
+    /** Asking for the weather, off the main thread. */
+    private final ExecutorService weatherThread = Executors.newSingleThreadExecutor();
     /** Softened artwork per app (HeroArt, about 5 KB each), made the first time its dock tile is focused. */
     private final Map<String, Bitmap> heroArtCache = new HashMap<>();
     /** The app whose artwork heroArt shows, so focusing it again only fades it back in. */
@@ -344,6 +359,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (festive) updateWifiLabel();
             sky.update();
             wallpaperPlayer.update();
+            refreshWeather();
             handler.postDelayed(this, MINUTE_MS);
         }
     };
@@ -417,6 +433,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         cinematicWhiteFocus = cfg.cinematicWhiteFocus;
         heroArtAlpha = cfg.cinematicArt / 100f;
         if (cinematic) setUpCinematicShelf(cfg.cinematicScrim);
+        if (cfg.weatherEnabled()) setUpWeather(cfg);
         // dock_title false: the name above the dock (and the cinematic lines under it) never shows; the glow
         // still follows the dock.
         if (!cfg.dockTitle) hero.setVisibility(View.GONE);
@@ -856,6 +873,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (showStats) startStats();
         sky.update();
         wallpaperPlayer.start();
+        refreshWeather();
         handler.postDelayed(minuteTick, MINUTE_MS);
         if (festive && diya != null) {
             diya.start();
@@ -928,6 +946,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             ambient.setAlpha(0f);
             heroArt.animate().cancel();
             heroArt.setAlpha(0f);
+            if (weatherPanel != null) weatherPanel.panel.setAlpha(0f);
         }
         if (rebuild) reloadTiles();
         if (animate && entrance && animations && !reducedMotion) {
@@ -1029,6 +1048,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         hero.animate().cancel();
         ambient.animate().cancel();
         heroArt.animate().cancel();
+        if (weatherPanel != null) weatherPanel.panel.animate().cancel();
         handler.removeCallbacks(minuteTick);
         stopStats();
         if (diya != null) diya.stop();
@@ -1087,6 +1107,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         super.onDestroy();
         unregisterReceiver(packageReceiver);
         wallpaperPlayer.close();
+        weatherThread.shutdownNow();
         ConnectivityManager cm = getSystemService(ConnectivityManager.class);
         TvInputManager tim = (TvInputManager) getSystemService(TV_INPUT_SERVICE);
         if (tim != null) tim.unregisterCallback(inputCallback);
@@ -1582,6 +1603,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         float y = dockTopInRoot - 14 * density - 26 * density - hero.getHeight();
         boolean changed = !label.contentEquals(heroName.getText());
         if (cinematic && heroArtAlpha > 0f) showHeroArt(position);
+        lastDockTop = dockTopInRoot;
+        showWeather(dockTopInRoot);
 
         if (!animations || reducedMotion) {
             // Snap the shelf instead of sliding and fading it: each of those frames repaints the
@@ -1640,6 +1663,79 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (!cinematic) return;
         updateHeroMeta(position);
         updateHeroDots(position);
+    }
+
+    // ---- weather (ported from manas-04/cleanyourtv ca9ad37) ---------------------------------------
+
+    private void setUpWeather(Config cfg) {
+        weatherLatitude = cfg.weatherLatitude;
+        weatherLongitude = cfg.weatherLongitude;
+        weatherFahrenheit = cfg.weatherFahrenheit;
+        weatherKey = Weather.key(weatherLatitude, weatherLongitude, weatherFahrenheit);
+        weatherPanel = new WeatherPanel(this, cfg.weatherPlace);
+        // The last answer, so the weather is on the first frame; a fresh one follows when it is due.
+        weather = Weather.load(this, weatherKey);
+        weatherPanel.bind(weather);
+    }
+
+    /** Redraws the weather (the next hours move on with the clock) and asks for a new forecast once an hour. */
+    private void refreshWeather() {
+        if (weatherPanel == null) return;
+        bindWeather();
+        long now = System.currentTimeMillis();
+        if (weatherLoading || (weather != null && now - weather.fetchedAt < Weather.REFRESH_MS)) return;
+        if (now - lastWeatherAttempt < 10 * 60_000L) return;   // after a failure, try again ten minutes later
+        lastWeatherAttempt = now;
+        weatherLoading = true;
+        final String key = weatherKey;
+        final double latitude = weatherLatitude, longitude = weatherLongitude;
+        final boolean fahrenheit = weatherFahrenheit;
+        final Context app = getApplicationContext();
+        weatherThread.execute(() -> {
+            Weather fresh = null;
+            try {
+                fresh = Weather.fetch(latitude, longitude, fahrenheit);
+                fresh.save(app, key);
+            } catch (Exception ignored) {
+                // Offline or the service is down: the last answer stays until it is too old to show.
+            }
+            final Weather got = fresh;
+            handler.post(() -> {
+                weatherLoading = false;
+                if (got == null || isDestroyed()) return;
+                weather = got;
+                bindWeather();
+            });
+        });
+    }
+
+    private void bindWeather() {
+        weatherPanel.bind(weather);
+        // Its height may have changed (the next hours, a line more or less): place it once it is laid out.
+        if (heroShown) weatherPanel.panel.post(() -> showWeather(lastDockTop));
+    }
+
+    /** The weather sits level with the shelf on the other side of the screen and comes and goes with it. */
+    private void showWeather(float dockTopInRoot) {
+        if (weatherPanel == null || weatherPanel.panel.getVisibility() != View.VISIBLE) return;
+        View panel = weatherPanel.panel;
+        float y = dockTopInRoot - 14 * density - 26 * density - panel.getHeight();
+        // Never up into the top bar, whatever the dock position.
+        View bar = findViewById(R.id.topButtons);
+        Rect barRect = new Rect(0, 0, bar.getWidth(), bar.getHeight());
+        root.offsetDescendantRectToMyCoords(bar, barRect);
+        panel.setY(Math.max(y, barRect.bottom + 12 * density));
+        panel.animate().cancel();
+        if (!animations) panel.setAlpha(1f);
+        else if (panel.getAlpha() < 1f) panel.animate().alpha(1f).setDuration(reducedMotion ? 100 : 260).start();
+    }
+
+    private void hideWeather() {
+        if (weatherPanel == null) return;
+        View panel = weatherPanel.panel;
+        panel.animate().cancel();
+        if (animations) panel.animate().alpha(0f).setDuration(reducedMotion ? 100 : 160).start();
+        else panel.setAlpha(0f);
     }
 
     // ---- cinematic shelf -------------------------------------------------------------------------
@@ -1855,6 +1951,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         heroArt.animate().cancel();
         heroArt.setAlpha(0f);
         heroShown = false;
+        hideWeather();
         if (!ambientGlow) return;
         if (!animations || reducedMotion) {
             setAmbient(color);
@@ -1879,6 +1976,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         ambient.animate().cancel();
         heroArt.animate().cancel();
         heroShown = false;
+        hideWeather();
         if (animations && !reducedMotion) {
             hero.animate().alpha(0f).setDuration(160).start();
             if (ambientGlow) ambient.animate().alpha(0f).setDuration(300).start();

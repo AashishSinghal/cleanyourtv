@@ -207,6 +207,13 @@ final class Config {
     /** Hold OK on a tile opens a menu (Move, Remove from Home, App info) instead of App info (config.xml / theme tile_menu). */
     final boolean tileMenu;
 
+    // ---- my-tv keys: set by loadMyTv() after the constructor, so upstream's constructor stays as it is ----
+    /** Weather on the cinematic shelf from Open-Meteo (config.xml, weather); also needs both coordinates. */
+    boolean weather;
+    String weatherPlace = "";
+    double weatherLatitude = Double.NaN, weatherLongitude = Double.NaN;
+    boolean weatherFahrenheit;
+
     private Config(List<String> dockApps, boolean fillDock, List<String> hiddenApps, List<String> libraryApps, String liveTvPackage,
                    String liveTvAction, String liveTvInputId, Map<String, String> launchActions, Map<String, String> appLabels,
                    Map<String, String> appBanners, String sourcePanelService, String sourcePanelAction,
@@ -512,7 +519,7 @@ final class Config {
         Festival festival = json == null ? Festival.NONE : Festival.parse(string(json, "festival", ""),
                 string(json, "festival_until", ""), string(json, "greeting", ""), string(json, "accent_color", ""));
 
-        return new Config(dock, fillDock, hidden, libraryApps, liveTv, liveTvAction, liveTvInputId, packageMap(launchActions), packageMap(appLabels),
+        Config config = new Config(dock, fillDock, hidden, libraryApps, liveTv, liveTvAction, liveTvInputId, packageMap(launchActions), packageMap(appLabels),
                 packageMap(appBanners), panelService,
                 panelAction, panelExtra, coocaaSources, inputAction, inputUriScheme,
                 Math.max(1, columns), Math.max(0, rowsBelow), animations, advancedEffects,
@@ -521,6 +528,28 @@ final class Config {
                 wallpapers, rotationMinutes, wallpaperDim, dockOpacity, wallpaperOrder, applied,
                 festival, inputKeycodes, appKeys, stockHomeRedirect, json == null ? Collections.emptyList() : raceCalendar(json), cinematic, ambientGlow, appGlow, fadeRows,
                 Math.max(0, idleClockMinutes), keyFilter, dockGlass, glowStyle, wallpaperCaptions, handleViewInputs, tileMenu, dockEvenPadding, cinematicDots, cinematicWhiteFocus, wifiStatusColor, cinematicScrim, cinematicArt, wallpaperMoods, gamepadPassthrough);
+        config.loadMyTv(res, json);
+        return config;
+    }
+
+    /** my-tv's keys, from config.xml and then from a theme's config.json, like every other key. */
+    private void loadMyTv(Resources res, JSONObject json) {
+        weather = res.getBoolean(R.bool.weather);
+        weatherPlace = res.getString(R.string.weather_place).trim();
+        weatherLatitude = coordinate(res.getString(R.string.weather_latitude));
+        weatherLongitude = coordinate(res.getString(R.string.weather_longitude));
+        weatherFahrenheit = res.getBoolean(R.bool.weather_fahrenheit);
+        if (json == null) return;
+        weather = bool(json, "weather", weather);
+        weatherPlace = string(json, "weather_place", weatherPlace);
+        weatherLatitude = number(json, "weather_latitude", weatherLatitude);
+        weatherLongitude = number(json, "weather_longitude", weatherLongitude);
+        weatherFahrenheit = bool(json, "weather_fahrenheit", weatherFahrenheit);
+    }
+
+    /** Weather is on when the weather flag is set and both coordinates are on the globe. */
+    boolean weatherEnabled() {
+        return weather && Math.abs(weatherLatitude) <= 90 && Math.abs(weatherLongitude) <= 180;
     }
 
     /**
@@ -668,6 +697,20 @@ final class Config {
     private static boolean bool(JSONObject o, String key, boolean fallback) {
         Object v = o.opt(key);
         return v instanceof Boolean ? (Boolean) v : fallback;
+    }
+
+    private static double number(JSONObject o, String key, double fallback) {
+        Object v = o.opt(key);
+        return v instanceof Number ? ((Number) v).doubleValue() : fallback;
+    }
+
+    /** A coordinate from config.xml, where there are no float resources; NaN when empty or not a number. */
+    private static double coordinate(String text) {
+        try {
+            return text.trim().isEmpty() ? Double.NaN : Double.parseDouble(text.trim());
+        } catch (NumberFormatException e) {
+            return Double.NaN;
+        }
     }
 
     private static int integer(JSONObject o, String key, int fallback, int min, int max) {
