@@ -23,7 +23,7 @@
   "hero_dots": false,
   "hero_art_alpha": 0,
   "hero_scrim_percent": 60,
-  "inputs_icon_only": true,
+  "icon_only_inputs": true,
   "wifi_status_color": true,
   "settings_key_panel": true
 }
