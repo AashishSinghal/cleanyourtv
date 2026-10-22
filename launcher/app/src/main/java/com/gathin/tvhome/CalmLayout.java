@@ -58,6 +58,41 @@ final class CalmLayout {
         styleButtons();
         weather();
         scrim();
+        tiles();
+    }
+
+    // ---- the tiles: a white ring, a lift and a shadow; the next row fades into the bottom edge -----
+
+    private void tiles() {
+        AppAdapter.calmScale = 1.08f;
+        ((GlassView) activity.findViewById(R.id.glass)).setRing(true);
+        View grid = activity.findViewById(R.id.grid);
+        grid.setVerticalFadingEdgeEnabled(true);
+        grid.setFadingEdgeLength(dp(42));
+    }
+
+    /** Left/Right on a system button: the next shown button that way; the row's ends keep the focus. */
+    boolean moveAcross(View from, boolean right) {
+        LinearLayout row = (LinearLayout) topButtons;
+        int at = row.indexOfChild(from);
+        for (int i = at + (right ? 1 : -1); i >= 0 && i < row.getChildCount(); i += right ? 1 : -1) {
+            View b = row.getChildAt(i);
+            if (b.getVisibility() == View.VISIBLE && b.isFocusable()) {
+                b.requestFocus();
+                return true;
+            }
+        }
+        return true;
+    }
+
+    /** Up from the dock: the first system button that is shown (Inputs on a TV with inputs). */
+    boolean focusButtons() {
+        LinearLayout row = (LinearLayout) topButtons;
+        for (int i = 0; i < row.getChildCount(); i++) {
+            View b = row.getChildAt(i);
+            if (b.getVisibility() == View.VISIBLE && b.isFocusable()) return b.requestFocus();
+        }
+        return false;
     }
 
     private int dp(float v) {
@@ -178,17 +213,10 @@ final class CalmLayout {
 
     /**
      * 32dp round icons on a faint fill. Focused: white, dark ink, 1.06x, and the label slides out to the left (the
-     * row is anchored at its right end, and its LayoutTransition animates the width).
+     * row is anchored at its right end and each button animates its own width, see resize).
      */
     private void styleButtons() {
         LinearLayout row = (LinearLayout) topButtons;
-        android.animation.LayoutTransition slide = new android.animation.LayoutTransition();
-        slide.enableTransitionType(android.animation.LayoutTransition.CHANGING);
-        slide.setDuration(MOTION_MS);
-        slide.setInterpolator(android.animation.LayoutTransition.CHANGING, EASE);
-        slide.setInterpolator(android.animation.LayoutTransition.CHANGE_APPEARING, EASE);
-        slide.setInterpolator(android.animation.LayoutTransition.CHANGE_DISAPPEARING, EASE);
-        row.setLayoutTransition(slide);
         android.content.res.ColorStateList ink = new android.content.res.ColorStateList(
                 new int[][]{{android.R.attr.state_focused}, {}}, new int[]{INK_FOCUSED, INK_BUTTON});
         boolean first = true;
@@ -205,6 +233,9 @@ final class CalmLayout {
             size(b, 14);
             font(b, R.font.outfit_medium);
             b.setSingleLine(true);
+            // The standard Wi-Fi pill caps its width for a network name; the calm label needs its full length.
+            b.setMaxWidth(Integer.MAX_VALUE);
+            b.setEllipsize(null);
             android.graphics.drawable.Drawable icon = b.getCompoundDrawablesRelative()[0];
             if (icon != null) {
                 icon = icon.mutate();
@@ -243,19 +274,69 @@ final class CalmLayout {
         return states;
     }
 
+    private final java.util.Map<TextView, android.animation.ValueAnimator> resizing = new java.util.HashMap<>();
+
     private void focused(TextView b) {
+        int from = b.getWidth();
         b.setText(labels.get(b));
         b.setCompoundDrawablePadding(dp(6));
         b.setPaddingRelative(dp(10), 0, dp(13), 0);
+        b.measure(View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+                View.MeasureSpec.makeMeasureSpec(dp(32), View.MeasureSpec.EXACTLY));
+        resize(b, from, b.getMeasuredWidth(), null);
         b.animate().scaleX(1.06f).scaleY(1.06f).setDuration(MOTION_MS).setInterpolator(EASE).start();
     }
 
     private void unfocused(TextView b) {
-        b.setText(null);
-        b.setCompoundDrawablePadding(0);
         int pad = Math.round(8.5f * density);
-        b.setPaddingRelative(pad, 0, pad, 0);
+        // The label stays while the pill closes over it (a TextView clips its text to its bounds), then goes.
+        resize(b, b.getWidth(), dp(32), () -> {
+            b.setText(null);
+            b.setCompoundDrawablePadding(0);
+            b.setPaddingRelative(pad, 0, pad, 0);
+        });
         b.animate().scaleX(1f).scaleY(1f).setDuration(MOTION_MS).setInterpolator(EASE).start();
+    }
+
+    /**
+     * Animates a button's width without ever passing through zero: Android drops focus from a focused view whose
+     * size becomes zero (View.sizeChange), which is what a LayoutTransition did on the first frame of the slide and
+     * sent the focus to a tile. Before the first layout (width 0) the change is applied at once.
+     */
+    private void resize(TextView b, int from, int to, Runnable end) {
+        android.animation.ValueAnimator running = resizing.remove(b);
+        if (running != null) running.cancel();
+        ViewGroup.LayoutParams lp = b.getLayoutParams();
+        if (from <= 0 || from == to) {
+            if (end != null) end.run();
+            lp.width = ViewGroup.LayoutParams.WRAP_CONTENT;
+            b.setLayoutParams(lp);
+            return;
+        }
+        android.animation.ValueAnimator anim = android.animation.ValueAnimator.ofInt(from, to);
+        anim.setDuration(MOTION_MS);
+        anim.setInterpolator(EASE);
+        anim.addUpdateListener(a -> {
+            lp.width = (int) a.getAnimatedValue();
+            b.setLayoutParams(lp);
+        });
+        anim.addListener(new android.animation.AnimatorListenerAdapter() {
+            private boolean cancelled;
+
+            @Override public void onAnimationCancel(android.animation.Animator a) {
+                cancelled = true;
+            }
+
+            @Override public void onAnimationEnd(android.animation.Animator a) {
+                resizing.remove(b);
+                if (cancelled) return;
+                if (end != null) end.run();
+                lp.width = ViewGroup.LayoutParams.WRAP_CONTENT;
+                b.setLayoutParams(lp);
+            }
+        });
+        resizing.put(b, anim);
+        anim.start();
     }
 
     /** The quick settings panel rises from the Settings button, lined up with the button row's right edge. */

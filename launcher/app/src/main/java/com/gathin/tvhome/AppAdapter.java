@@ -612,8 +612,11 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     float focusScale() {
-        return !animations ? 1f : advancedEffects ? 1.12f : 1.10f;
+        return !animations ? 1f : calmScale > 0f ? calmScale : advancedEffects ? 1.12f : 1.10f;
     }
+
+    /** my-tv home_layout "calm": the focused tile's lift (1.08), with the calm motion and a shadow; 0 when off. */
+    static float calmScale;
 
     /** A vivid colour sampled from the app's banner (or icon), cached per entry; a card's accent when it set one. */
     int ambientColorAt(int position) {
@@ -725,7 +728,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 view.animate().cancel();
                 banner.animate().cancel();
                 name.animate().cancel();
-                float scale = !animations ? 1f : advancedEffects ? 1.12f : 1.10f;
+                float scale = !animations ? 1f : calmScale > 0f ? calmScale : advancedEffects ? 1.12f : 1.10f;
                 float s = focused ? scale : 1f;
                 if (!animations) {
                     view.setScaleX(1f);
@@ -750,6 +753,13 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     // left there the name overlaps the zoomed tile.
                     // Only on focus: snapping it back to -6dp while it fades out would jump it up over the tile.
                     if (focused) name.setTranslationY(density * 4f);
+                } else if (calmScale > 0f) {
+                    // Calm: the lift and a deeper shadow over the mockup's 240 ms ease-out, no overshoot.
+                    view.animate().scaleX(s).scaleY(s).translationY(0f)
+                            .translationZ(focused ? 10f * density : 0f)
+                            .setDuration(CalmLayout.MOTION_MS).setInterpolator(CalmLayout.EASE)
+                            .withLayer().start();
+                    name.setAlpha(focused ? 1f : restNameAlpha);
                 } else {
                     view.animate().scaleX(s).scaleY(s)
                             .translationY(focused && advancedEffects ? -4f * density : 0f)

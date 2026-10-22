@@ -530,7 +530,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             public void onChildViewDetachedFromWindow(@NonNull View v) {
             }
         });
-        if (dockRow) grid.addItemDecoration(new DockDecoration(COLUMNS, density, cinematic, cfg.alwaysShowNames, cfg.dockOpacity, cfg.dockGlass, cfg.dockEvenPadding));
+        if (dockRow) grid.addItemDecoration(new DockDecoration(COLUMNS, density, cinematic, cfg.alwaysShowNames, cfg.dockOpacity, cfg.dockGlass, cfg.dockEvenPadding)
+                .withoutBand(cfg.calmLayout()));
         if (cfg.fadeRows) TopFade.attach(grid, 48 * density);
         // Reduced motion: the tiles are simply there, with no entrance (reloadApps skips it there too).
         if (animations && !reducedMotion) {
@@ -693,6 +694,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 // Back to the dock tile Up came from, not wherever the focus finder lands.
                 focusTile(lastFocused % COLUMNS);
                 return true;
+            }
+            // Calm: step along the visible buttons; the buttons sit above the dock by translation, which the
+            // focus finder does not see, so it could jump to a tile instead.
+            if (calm != null && (keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_DPAD_RIGHT)) {
+                return calm.moveAcross(v, keyCode == KeyEvent.KEYCODE_DPAD_RIGHT);
             }
             int firstButton = btnInputs.getVisibility() == View.VISIBLE ? R.id.btnInputs : firstTopButton().getId();
             int leftButton = rtlMenuBar ? R.id.btnSettings : firstButton;
@@ -1559,7 +1565,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             glassAccent = accent;
             glass.setAccent(accent);
         }
-        if (!glassShown) {
+        if (calm != null && animations && !reducedMotion) {
+            // Calm: the ring does not travel; it fades in on the tile that took focus, as the tile lifts.
+            springX.cancel();
+            springY.cancel();
+            glass.animate().cancel();
+            glass.setTranslationX(x);
+            glass.setTranslationY(y);
+            glass.setAlpha(0f);
+            glass.animate().alpha(1f).setDuration(CalmLayout.MOTION_MS).setInterpolator(CalmLayout.EASE).start();
+            glassShown = true;
+        } else if (!glassShown) {
             springX.cancel();
             springY.cancel();
             glass.setTranslationX(x);
@@ -2228,6 +2244,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                     rtlAppGrid, keyCode == KeyEvent.KEYCODE_DPAD_LEFT);
         }
         if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+            // Calm: the buttons sit above the dock by translation, which the focus search does not see.
+            if (position < COLUMNS && calm != null) return calm.focusButtons();
             if (position < COLUMNS) return false;          // dock row: let focus move to the top bar
             target = position - COLUMNS;
         } else {

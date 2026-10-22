@@ -63,6 +63,14 @@ public class GlassView extends View {
         invalidate();
     }
 
+    /** my-tv home_layout "calm": only a white 1.5dp ring, 3dp out from the tile (the mockup's outline-offset). */
+    private boolean ring;
+
+    void setRing(boolean ring) {
+        this.ring = ring;
+        invalidate();
+    }
+
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
@@ -74,6 +82,14 @@ public class GlassView extends View {
     protected void onDraw(Canvas canvas) {
         float inset = 6f * density;   // room for the glow
         rect.set(inset, inset, getWidth() - inset, getHeight() - inset);
+        if (ring) {
+            // The tile fills rect: the ring's centre line sits 3dp + half its width outside it.
+            float out = 3.75f * density;
+            rim.setColor(0xFFFFFFFF);
+            canvas.drawRoundRect(rect.left - out, rect.top - out, rect.right + out, rect.bottom + out,
+                    radius + out, radius + out, rim);
+            return;
+        }
 
         // Outer glow: thin rings across the inset, each a little fainter, so it fades out smoothly. Three wide
         // strokes left visible bands once the glow took an app's colour at a stronger alpha. The hardware layer

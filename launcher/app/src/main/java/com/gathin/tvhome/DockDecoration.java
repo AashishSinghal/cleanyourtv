@@ -73,8 +73,17 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
         }
     }
 
+    /** my-tv home_layout "calm": keep the dock's spacing but draw no band. */
+    private boolean bandless;
+
+    DockDecoration withoutBand(boolean bandless) {
+        this.bandless = bandless;
+        return this;
+    }
+
     @Override
     public void onDraw(@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+        if (bandless) return;
         boolean any = false;
         int cardWidth = 0;
         for (int i = 0; i < parent.getChildCount(); i++) {
