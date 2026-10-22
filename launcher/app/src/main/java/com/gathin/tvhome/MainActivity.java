@@ -172,7 +172,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private float lastDockTop;
     /** Asking for the weather, off the main thread. */
     private final ExecutorService weatherThread = Executors.newSingleThreadExecutor();
-    /** my-tv home_layout "calm" (design/v4); null for the standard layout. */
+    /** my-tv home_layout "calm"; null for the standard layout. */
     private CalmLayout calm;
     /** my-tv quiet round system buttons: the calm layout's, or the standard top bar's with quiet_buttons; else null. */
     private QuietButtons quietButtons;

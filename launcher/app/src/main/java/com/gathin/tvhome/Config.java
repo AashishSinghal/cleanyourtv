@@ -213,7 +213,7 @@ final class Config {
     String weatherPlace = "";
     double weatherLatitude = Double.NaN, weatherLongitude = Double.NaN;
     boolean weatherFahrenheit;
-    /** Home's layout (home_layout): "calm" for design/v4, empty for the standard one. */
+    /** Home's layout (home_layout): "calm" for the calm layout, empty for the standard one. */
     String homeLayout = "";
     /** The quiet round system buttons on the standard top bar (quiet_buttons); calm always has them. */
     boolean quietButtons;
@@ -558,7 +558,7 @@ final class Config {
         quietButtons = bool(json, "quiet_buttons", quietButtons);
     }
 
-    /** home_layout "calm": the design/v4 Home (CalmLayout). */
+    /** home_layout "calm": the calm Home (CalmLayout). */
     boolean calmLayout() {
         return "calm".equals(homeLayout);
     }

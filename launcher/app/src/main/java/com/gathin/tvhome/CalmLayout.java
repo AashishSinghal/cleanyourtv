@@ -22,7 +22,7 @@ import android.widget.TextView;
 import java.util.Locale;
 
 /**
- * my-tv home_layout "calm" (design/v4): look up to glance, look down to act.
+ * my-tv home_layout "calm": look up to glance, look down to act.
  *
  * The top half is a header that never takes focus: the time on the left, the weather mirrored on the right, in
  * the same type sizes. Everything the remote reaches sits just above the dock: the focused app's name as a small

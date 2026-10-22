@@ -377,11 +377,11 @@
     <string name="weather_latitude" translatable="false"></string>
     <string name="weather_longitude" translatable="false"></string>
     <bool name="weather_fahrenheit">false</bool>
-    <!-- "calm" (design/v4): time and weather as a header that never takes focus; the focused app's name as a small
+    <!-- "calm": time and weather as a header that never takes focus; the focused app's name as a small
          caption with the system buttons as round icons beside it, just above the dock; an offset white focus ring.
          Needs cinematic_home for "Last opened". Empty keeps the standard layout. A theme can set "home_layout". -->
     <string name="home_layout" translatable="false"></string>
-    <!-- true gives the standard top bar the calm layout's quiet buttons (design/v4): small round icons that slide
+    <!-- true gives the standard top bar the calm layout's quiet buttons: small round icons that slide
          their label out only while focused, with a green dot on the network icon while online. home_layout "calm"
          always has them. A theme can set "quiet_buttons". -->
     <bool name="quiet_buttons">false</bool>

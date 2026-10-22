@@ -10,7 +10,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 /**
- * my-tv quiet system buttons (design/v4): 32dp round icons on a faint fill; focused, one turns white with dark ink,
+ * my-tv quiet system buttons: 32dp round icons on a faint fill; focused, one turns white with dark ink,
  * lifts 1.06x and slides its label out ("Wi-Fi · Connected") over 240 ms. The network icon carries a green dot
  * while online. Used by the calm layout, and on its own over the standard top bar (quiet_buttons).
  */
