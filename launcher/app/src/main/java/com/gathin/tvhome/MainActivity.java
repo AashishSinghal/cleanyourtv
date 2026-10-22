@@ -172,6 +172,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private float lastDockTop;
     /** Asking for the weather, off the main thread. */
     private final ExecutorService weatherThread = Executors.newSingleThreadExecutor();
+    /** my-tv home_layout "calm" (design/v4); null for the standard layout. */
+    private CalmLayout calm;
     /** Softened artwork per app (HeroArt, about 5 KB each), made the first time its dock tile is focused. */
     private final Map<String, Bitmap> heroArtCache = new HashMap<>();
     /** The app whose artwork heroArt shows, so focusing it again only fades it back in. */
@@ -429,7 +431,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         heroArt = findViewById(R.id.heroArt);
         cinematic = cfg.cinematicHome;
         glowStyle = cfg.glowStyle;
-        heroDotsShown = cfg.cinematicDots;
+        heroDotsShown = cfg.cinematicDots && !cfg.calmLayout();   // the calm caption is one line: no dots
         cinematicWhiteFocus = cfg.cinematicWhiteFocus;
         heroArtAlpha = cfg.cinematicArt / 100f;
         if (cinematic) setUpCinematicShelf(cfg.cinematicScrim);
@@ -724,6 +726,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             registerReceiver(packageReceiver, packageFilter);
         }
 
+        if (cfg.calmLayout()) {
+            calm = new CalmLayout(this, root, density);
+            calm.apply();
+            if (weatherPanel != null) {
+                weatherPanel.setCalm(true);
+                weatherPanel.bind(weather);
+            }
+        }
+
         ConnectivityManager cm = getSystemService(ConnectivityManager.class);
         TvInputManager tim = (TvInputManager) getSystemService(TV_INPUT_SERVICE);
         if (tim != null) tim.registerCallback(inputCallback, handler);
@@ -948,7 +959,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             ambient.setAlpha(0f);
             heroArt.animate().cancel();
             heroArt.setAlpha(0f);
-            if (weatherPanel != null) weatherPanel.panel.setAlpha(0f);
+            if (weatherPanel != null && calm == null) weatherPanel.panel.setAlpha(0f);
         }
         if (rebuild) reloadTiles();
         if (animate && entrance && animations && !reducedMotion) {
@@ -1602,7 +1613,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private void showHero(int position, float dockTopInRoot) {
         String label = adapter.labelAt(position);
         int color = adapter.ambientColorAt(position);
-        float y = dockTopInRoot - 14 * density - 26 * density - hero.getHeight();
+        float y = calm != null ? calm.captionY(dockTopInRoot)
+                : dockTopInRoot - 14 * density - 26 * density - hero.getHeight();
+        if (calm != null) calm.placeButtons(dockTopInRoot);
         boolean changed = !label.contentEquals(heroName.getText());
         if (cinematic && heroArtAlpha > 0f) showHeroArt(position);
         lastDockTop = dockTopInRoot;
@@ -1719,7 +1732,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     /** The weather sits level with the shelf on the other side of the screen and comes and goes with it. */
     private void showWeather(float dockTopInRoot) {
-        if (weatherPanel == null || weatherPanel.panel.getVisibility() != View.VISIBLE) return;
+        // Calm: the weather is part of the fixed header, not of the shelf.
+        if (calm != null || weatherPanel == null || weatherPanel.panel.getVisibility() != View.VISIBLE) return;
         View panel = weatherPanel.panel;
         float y = dockTopInRoot - 14 * density - 26 * density - panel.getHeight();
         // Never up into the top bar, whatever the dock position.
@@ -1733,7 +1747,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     private void hideWeather() {
-        if (weatherPanel == null) return;
+        if (weatherPanel == null || calm != null) return;
         View panel = weatherPanel.panel;
         panel.animate().cancel();
         if (animations) panel.animate().alpha(0f).setDuration(reducedMotion ? 100 : 160).start();

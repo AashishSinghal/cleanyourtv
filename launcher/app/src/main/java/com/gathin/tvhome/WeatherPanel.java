@@ -28,6 +28,13 @@ final class WeatherPanel {
     /** What the hour strip shows, so the minute tick rebuilds it only when the next hours move on. */
     private Weather hoursFor;
     private LocalDateTime hoursFrom;
+    /** my-tv home_layout "calm": the hours without dividers, in the calm header's type sizes. */
+    private boolean calm;
+
+    void setCalm(boolean calm) {
+        this.calm = calm;
+        hoursFor = null;   // rebuild the strip in the new style on the next bind
+    }
 
     WeatherPanel(Activity activity, String placeName) {
         this.activity = activity;
@@ -83,7 +90,7 @@ final class WeatherPanel {
         DateTimeFormatter hourFormat = timeFormat("ha", "Hm");
         for (int i = 0; i < next.size(); i++) {
             Weather.Hour h = next.get(i);
-            if (i > 0) {
+            if (i > 0 && !calm) {
                 View divider = new View(activity);
                 divider.setBackgroundColor(0x1AFFFFFF);
                 hours.addView(divider, new LinearLayout.LayoutParams((int) density, LinearLayout.LayoutParams.MATCH_PARENT));
@@ -91,16 +98,18 @@ final class WeatherPanel {
             LinearLayout column = new LinearLayout(activity);
             column.setOrientation(LinearLayout.VERTICAL);
             column.setGravity(Gravity.CENTER_HORIZONTAL);
-            TextView time = text(h.time.format(hourFormat).toUpperCase(Locale.getDefault()), 8.5f, 0x8CFFFFFF, R.font.outfit_medium);
-            time.setLetterSpacing(0.14f);
+            TextView time = text(h.time.format(hourFormat).toUpperCase(Locale.getDefault()),
+                    calm ? 11f : 8.5f, calm ? CalmLayout.INK_3 : 0x8CFFFFFF, calm ? R.font.outfit_regular : R.font.outfit_medium);
+            time.setLetterSpacing(calm ? 0.06f : 0.14f);
             ImageView glyph = new ImageView(activity);
             glyph.setImageResource(Weather.iconRes(h.code, h.day));
-            LinearLayout.LayoutParams glyphLp = new LinearLayout.LayoutParams((int) (15 * density), (int) (15 * density));
-            glyphLp.topMargin = (int) (4 * density);
+            float glyphDp = calm ? 17 : 15;
+            LinearLayout.LayoutParams glyphLp = new LinearLayout.LayoutParams((int) (glyphDp * density), (int) (glyphDp * density));
+            glyphLp.topMargin = (int) ((calm ? 3 : 4) * density);
             glyphLp.bottomMargin = (int) (3 * density);
             column.addView(time);
             column.addView(glyph, glyphLp);
-            column.addView(text(degrees(h.temp), 12f, 0xFFFFFFFF, R.font.outfit_regular));
+            column.addView(text(degrees(h.temp), calm ? 14f : 12f, 0xFFFFFFFF, R.font.outfit_regular));
             hours.addView(column, new LinearLayout.LayoutParams((int) (50 * density), LinearLayout.LayoutParams.WRAP_CONTENT));
         }
     }

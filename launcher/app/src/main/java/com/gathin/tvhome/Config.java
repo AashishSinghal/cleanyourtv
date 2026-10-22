@@ -213,6 +213,8 @@ final class Config {
     String weatherPlace = "";
     double weatherLatitude = Double.NaN, weatherLongitude = Double.NaN;
     boolean weatherFahrenheit;
+    /** Home's layout (home_layout): "calm" for design/v4, empty for the standard one. */
+    String homeLayout = "";
 
     private Config(List<String> dockApps, boolean fillDock, List<String> hiddenApps, List<String> libraryApps, String liveTvPackage,
                    String liveTvAction, String liveTvInputId, Map<String, String> launchActions, Map<String, String> appLabels,
@@ -539,12 +541,22 @@ final class Config {
         weatherLatitude = coordinate(res.getString(R.string.weather_latitude));
         weatherLongitude = coordinate(res.getString(R.string.weather_longitude));
         weatherFahrenheit = res.getBoolean(R.bool.weather_fahrenheit);
-        if (json == null) return;
+        homeLayout = res.getString(R.string.home_layout).trim();
+        if (json != null) loadMyTvTheme(json);
+    }
+
+    private void loadMyTvTheme(JSONObject json) {
         weather = bool(json, "weather", weather);
         weatherPlace = string(json, "weather_place", weatherPlace);
         weatherLatitude = number(json, "weather_latitude", weatherLatitude);
         weatherLongitude = number(json, "weather_longitude", weatherLongitude);
         weatherFahrenheit = bool(json, "weather_fahrenheit", weatherFahrenheit);
+        homeLayout = string(json, "home_layout", homeLayout);
+    }
+
+    /** home_layout "calm": the design/v4 Home (CalmLayout). */
+    boolean calmLayout() {
+        return "calm".equals(homeLayout);
     }
 
     /** Weather is on when the weather flag is set and both coordinates are on the globe. */
