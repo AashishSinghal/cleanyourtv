@@ -378,4 +378,8 @@
          caption with the system buttons as round icons beside it, just above the dock; an offset white focus ring.
          Needs cinematic_home for "Last opened". Empty keeps the standard layout. A theme can set "home_layout". -->
     <string name="home_layout" translatable="false"></string>
+    <!-- true gives the standard top bar the calm layout's quiet buttons (design/v4): small round icons that slide
+         their label out only while focused, with a green dot on the network icon while online. home_layout "calm"
+         always has them. A theme can set "quiet_buttons". -->
+    <bool name="quiet_buttons">false</bool>
 </resources>

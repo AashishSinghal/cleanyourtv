@@ -174,6 +174,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private final ExecutorService weatherThread = Executors.newSingleThreadExecutor();
     /** my-tv home_layout "calm" (design/v4); null for the standard layout. */
     private CalmLayout calm;
+    /** my-tv quiet round system buttons: the calm layout's, or the standard top bar's with quiet_buttons; else null. */
+    private QuietButtons quietButtons;
     /** Softened artwork per app (HeroArt, about 5 KB each), made the first time its dock tile is focused. */
     private final Map<String, Bitmap> heroArtCache = new HashMap<>();
     /** The app whose artwork heroArt shows, so focusing it again only fades it back in. */
@@ -744,10 +746,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (cfg.calmLayout()) {
             calm = new CalmLayout(this, root, density);
             calm.apply();
+            quietButtons = calm.buttons();
             if (weatherPanel != null) {
                 weatherPanel.setCalm(true);
                 weatherPanel.bind(weather);
             }
+        } else if (cfg.quietButtons && !festive) {
+            quietButtons = new QuietButtons(this, findViewById(R.id.topButtons), density);
+            quietButtons.style();
         }
 
         ConnectivityManager cm = getSystemService(ConnectivityManager.class);
@@ -2547,9 +2553,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             }
         } catch (Exception ignored) {
         }
-        if (calm != null) {
-            // Calm: a round icon with a green dot while online; the name and state only as the focus label.
-            calm.updateNetwork(btnWifi, icon, online ? text : getString(R.string.wifi), online);
+        if (quietButtons != null) {
+            // Quiet buttons: a round icon with a green dot while online; the name and state only as the focus label.
+            quietButtons.updateNetwork(btnWifi, icon, online ? text : getString(R.string.wifi), online);
             return;
         }
         // With a VPN app configured, a VPN that is down matters too: show a red "VPN off" capsule then.

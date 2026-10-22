@@ -215,6 +215,8 @@ final class Config {
     boolean weatherFahrenheit;
     /** Home's layout (home_layout): "calm" for design/v4, empty for the standard one. */
     String homeLayout = "";
+    /** The quiet round system buttons on the standard top bar (quiet_buttons); calm always has them. */
+    boolean quietButtons;
 
     private Config(List<String> dockApps, boolean fillDock, List<String> hiddenApps, List<String> libraryApps, String liveTvPackage,
                    String liveTvAction, String liveTvInputId, Map<String, String> launchActions, Map<String, String> appLabels,
@@ -542,6 +544,7 @@ final class Config {
         weatherLongitude = coordinate(res.getString(R.string.weather_longitude));
         weatherFahrenheit = res.getBoolean(R.bool.weather_fahrenheit);
         homeLayout = res.getString(R.string.home_layout).trim();
+        quietButtons = res.getBoolean(R.bool.quiet_buttons);
         if (json != null) loadMyTvTheme(json);
     }
 
@@ -552,6 +555,7 @@ final class Config {
         weatherLongitude = number(json, "weather_longitude", weatherLongitude);
         weatherFahrenheit = bool(json, "weather_fahrenheit", weatherFahrenheit);
         homeLayout = string(json, "home_layout", homeLayout);
+        quietButtons = bool(json, "quiet_buttons", quietButtons);
     }
 
     /** home_layout "calm": the design/v4 Home (CalmLayout). */
