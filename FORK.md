@@ -12,14 +12,15 @@ that TV needed, plus a few looks. Everything new is off until a theme turns it o
 |---|---|
 | **Home Return** (`my-tv/home-return/`) | Fire OS keeps Home for Amazon's launcher, so this small app opens the launcher whenever Amazon's home screen appears. Press Home twice within 3 s to stay on Amazon's home. It also turns the Amazon Music remote button into YouTube when the Music app is disabled. It is a separate app, so it works with any build of the launcher, upstream's included. |
 | **Weather on the shelf** (`weather`, `weather_place`, `weather_latitude`, `weather_longitude`, `weather_fahrenheit`) | Current conditions and the next hours from [Open-Meteo](https://open-meteo.com), ported from [manas-04/cleanyourtv](https://github.com/manas-04/cleanyourtv/tree/feat/wallpapers-weather) (ca9ad37). |
-| **Wallpaper moods** (`wallpaper_moods`) | Groups a rotating collection into `morning`, `evening` and `night` by the forecast's sunrise and sunset (07:00 and 18:30 without one), plus `rain` and `fog` from the current hour's weather; the rotation picks from the group that fits now and changes group as soon as the moment does. |
+| **Wallpaper moods with weather** (`wallpaper_moods`) | Upstream's `wallpaper_moods` rotates the `morning`, `evening` or `night` group by the sun. Here, with weather on, `rain` and `fog` groups win while the forecast's current hour has them, and the forecast's sunrise and sunset come first. |
 | **Quiet buttons and a calm layout** (`quiet_buttons`, `home_layout` `"calm"`) | Small round top-bar buttons that slide their label out only while focused, with a green dot while online; `calm` also moves the time and weather into a fixed header. |
-| **Display switches** | `wifi_status_color`, `hero_dots`, `hero_scrim_percent`, `hero_art_alpha`, `cinematic_white_focus`; and `settings_key_panel` also opens the quick settings panel from the Settings button. |
+| **Settings button** | `settings_key_panel` also opens the quick settings panel from the Settings button. |
 | **Emulator kit** (`my-tv/sim/sim.sh`) | Drives the Android TV emulator like the remote, to try changes before the TV. |
 
-The time-of-day half of wallpaper moods and the display switches are proposed upstream, without network, as
-[#1038](https://github.com/Gathin23/cleanyourtv/pull/1038) to [#1042](https://github.com/Gathin23/cleanyourtv/pull/1042)
-(there `cinematic_dots`, `cinematic_scrim` and `cinematic_art`).
+The display switches and the time-of-day half of wallpaper moods started here and are now upstream, without network:
+`wifi_status_color`, `cinematic_dots`, `cinematic_scrim`, `cinematic_art`, `cinematic_white_focus` and `wallpaper_moods`
+([#1038](https://github.com/Gathin23/cleanyourtv/pull/1038) to [#1042](https://github.com/Gathin23/cleanyourtv/pull/1042)).
+The themes in `my-tv/` use them.
 
 ## Network, permissions and privacy
 
