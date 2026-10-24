@@ -15,6 +15,7 @@ that TV needed, plus a few looks. Everything new is off until a theme turns it o
 | **Wallpaper moods with weather** (`wallpaper_moods`) | Upstream's `wallpaper_moods` rotates the `morning`, `evening` or `night` group by the sun. Here, with weather on, `rain` and `fog` groups win while the forecast's current hour has them, and the forecast's sunrise and sunset come first. |
 | **Quiet buttons and a calm layout** (`quiet_buttons`, `home_layout` `"calm"`) | Small round top-bar buttons that slide their label out only while focused, with a green dot while online; `calm` also moves the time and weather into a fixed header. |
 | **Settings button** | `settings_key_panel` also opens the quick settings panel from the Settings button. |
+| **Remote buttons screen** (Launcher settings > Remote buttons, [`my-tv/remote-buttons.md`](my-tv/remote-buttons.md)) | Press a remote button, pick the app it opens. The choices are kept apart from the theme (a theme push does not wipe them) and win over the theme's `app_keys`. D-pad, Back, Home, power, volume, playback, channel, input, voice and typing buttons can never be assigned. |
 | **Emulator kit** (`my-tv/sim/sim.sh`) | Drives the Android TV emulator like the remote, to try changes before the TV. |
 
 The display switches and the time-of-day half of wallpaper moods started here and are now upstream, without network:

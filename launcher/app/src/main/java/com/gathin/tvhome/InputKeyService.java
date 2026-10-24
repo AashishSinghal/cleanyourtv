@@ -25,6 +25,8 @@ public class InputKeyService extends AccessibilityService {
     private Map<Integer, String> appScancodes = Collections.emptyMap();
     private Map<Integer, String> holdAppKeys = Collections.emptyMap();
     private Map<Integer, String> holdAppScancodes = Collections.emptyMap();
+    /** RemoteKeyChoices.revision() when the lists above were read. */
+    private int keyRevision;
     /** restore_key_services was on when the config was read: this helper is noted for ServiceRepair. */
     private boolean repairRecord;
     /** Stops key filtering while a game controller is connected; null unless gamepad_passthrough and key_filter. */
@@ -39,16 +41,25 @@ public class InputKeyService extends AccessibilityService {
         repairRecord = config.restoreKeyServices;
         if (repairRecord) ServiceRepair.connected(this, getClass());
         inputKeycodes = config.inputKeycodes;
-        appKeys = RemoteKeys.parseAppKeys(config.appKeys);
-        appScancodes = RemoteKeys.parseAppScancodes(config.appKeys);
+        RemoteKeyLearn.helperConnected(this);
+        loadKeyMaps(config);
         RemoteKeys.applyKeyFilter(this, config.keyFilter);
-        holdAppKeys = RemoteKeys.parseHoldAppKeys(config.appKeys);
-        holdAppScancodes = RemoteKeys.parseHoldAppScancodes(config.appKeys);
         // gamepad_passthrough, off by default. Only with key_filter on: off, the service never filters keys.
         if (config.gamepadPassthrough && config.keyFilter && gamepads == null) {
             gamepads = new GamepadPassthrough(this);
             gamepads.start();
         }
+    }
+
+    /** The theme's app_keys plus the buttons assigned on the TV (Remote buttons in Launcher settings), the latter last. */
+    private void loadKeyMaps(Config config) {
+        keyRevision = RemoteKeyChoices.revision();
+        java.util.List<String> entries = RemoteKeyChoices.merge(config.appKeys,
+                RemoteKeyChoices.load(this).values());
+        appKeys = RemoteKeys.parseAppKeys(entries);
+        appScancodes = RemoteKeys.parseAppScancodes(entries);
+        holdAppKeys = RemoteKeys.parseHoldAppKeys(entries);
+        holdAppScancodes = RemoteKeys.parseHoldAppScancodes(entries);
     }
 
     private boolean isInputKey(int keyCode) {
@@ -59,6 +70,10 @@ public class InputKeyService extends AccessibilityService {
 
     @Override
     protected boolean onKeyEvent(KeyEvent event) {
+        // The Remote buttons screen is waiting for a button: it takes assignable ones, protected ones pass through.
+        if (RemoteKeyLearn.consume(event)) return true;
+        // A button was assigned or removed on the TV since the lists were read.
+        if (keyRevision != RemoteKeyChoices.revision()) loadKeyMaps(Config.load(this));
         // A scancode entry is more specific than any keycode, so it goes first.
         if (RemoteKeys.handle(this, event, appScancodes.get(event.getScanCode()),
                 holdAppScancodes.get(event.getScanCode()))) return true;
@@ -77,12 +92,14 @@ public class InputKeyService extends AccessibilityService {
     /** Unbound by Android: the user turned the helper off, so Home doesn't put it back (ServiceRepair). */
     @Override
     public boolean onUnbind(Intent intent) {
+        RemoteKeyLearn.helperGone(this);
         if (repairRecord) ServiceRepair.disconnected(this, getClass());
         return super.onUnbind(intent);
     }
 
     @Override
     public void onDestroy() {
+        RemoteKeyLearn.helperGone(this);
         if (gamepads != null) gamepads.stop();
         super.onDestroy();
     }

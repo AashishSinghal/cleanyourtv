@@ -58,10 +58,13 @@ public class HomeKeyService extends AccessibilityService {
     private final Set<String> stockHome = new HashSet<>();
     /** Stops key filtering while a game controller is connected; null unless gamepad_passthrough and key_filter, or before the unlock. */
     private GamepadPassthrough gamepads;
+    /** RemoteKeyChoices.revision() when the app key lists were read. */
+    private int keyRevision;
 
     @Override
     protected void onServiceConnected() {
         super.onServiceConnected();
+        RemoteKeyLearn.helperConnected(this);
         settingsScancodes = getResources().getIntArray(R.array.settings_key_scancodes);
         // The service is directBootAware: Android 11 skips a service that is not while the user is still
         // locked at boot, writes accessibility_enabled=0 and, on TCL G03 firmware, never binds it after the
@@ -94,6 +97,7 @@ public class HomeKeyService extends AccessibilityService {
 
     @Override
     public void onDestroy() {
+        RemoteKeyLearn.helperGone(this);
         stopWaitingForUnlock();
         if (gamepads != null) gamepads.stop();
         super.onDestroy();
@@ -108,8 +112,7 @@ public class HomeKeyService extends AccessibilityService {
         if (repairRecord) ServiceRepair.connected(this, getClass());
         settingsKeycodes = config.settingsKeycodes;
         settingsPanel = config.settingsKeyPanel;
-        appKeys = RemoteKeys.parseAppKeys(config.appKeys);
-        appScancodes = RemoteKeys.parseAppScancodes(config.appKeys);
+        loadKeyMaps(config);
         RemoteKeys.applyKeyFilter(this, config.keyFilter);
         stockHome.clear();
         if (!config.stockHomeRedirect.isEmpty()) {
@@ -125,13 +128,22 @@ public class HomeKeyService extends AccessibilityService {
             setServiceInfo(info);
         }
         if (!stockHome.isEmpty()) probeAtBoot();
-        holdAppKeys = RemoteKeys.parseHoldAppKeys(config.appKeys);
-        holdAppScancodes = RemoteKeys.parseHoldAppScancodes(config.appKeys);
         // gamepad_passthrough, off by default. Only with key_filter on: off, the service never filters keys.
         if (config.gamepadPassthrough && config.keyFilter && gamepads == null) {
             gamepads = new GamepadPassthrough(this);
             gamepads.start();
         }
+    }
+
+    /** The theme's app_keys plus the buttons assigned on the TV (Remote buttons in Launcher settings), the latter last. */
+    private void loadKeyMaps(Config config) {
+        keyRevision = RemoteKeyChoices.revision();
+        java.util.List<String> entries = RemoteKeyChoices.merge(config.appKeys,
+                RemoteKeyChoices.load(this).values());
+        appKeys = RemoteKeys.parseAppKeys(entries);
+        appScancodes = RemoteKeys.parseAppScancodes(entries);
+        holdAppKeys = RemoteKeys.parseHoldAppKeys(entries);
+        holdAppScancodes = RemoteKeys.parseHoldAppScancodes(entries);
     }
 
     private boolean isSettingsKey(KeyEvent event) {
@@ -143,6 +155,10 @@ public class HomeKeyService extends AccessibilityService {
 
     @Override
     protected boolean onKeyEvent(KeyEvent event) {
+        // The Remote buttons screen is waiting for a button: it takes assignable ones, protected ones pass through.
+        if (RemoteKeyLearn.consume(event)) return true;
+        // A button was assigned or removed on the TV since the lists were read.
+        if (keyRevision != RemoteKeyChoices.revision()) loadKeyMaps(Config.load(this));
         // A scancode entry is more specific than any keycode, so it goes first.
         if (RemoteKeys.handle(this, event, appScancodes.get(event.getScanCode()),
                 holdAppScancodes.get(event.getScanCode()))) return true;
@@ -179,6 +195,7 @@ public class HomeKeyService extends AccessibilityService {
     /** Unbound by Android: the user turned the helper off, so Home doesn't put it back (ServiceRepair). */
     @Override
     public boolean onUnbind(Intent intent) {
+        RemoteKeyLearn.helperGone(this);
         if (repairRecord) ServiceRepair.disconnected(this, getClass());
         return super.onUnbind(intent);
     }
