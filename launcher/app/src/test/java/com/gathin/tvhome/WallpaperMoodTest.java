@@ -43,12 +43,12 @@ public class WallpaperMoodTest {
     @Test
     public void sunComesFromTheConfiguredPlaceOrTheDefaults() {
         LocalDate day = LocalDate.of(2026, 10, 22);
-        ZoneId zone = ZoneId.of("America/Los_Angeles");
-        assertArrayEquals(Sun.riseAndSet(day, 37.35, -121.98, zone), WallpaperMood.sun(day, "37.35", " -121.98 ", zone));
+        ZoneId zone = ZoneId.of("Europe/London");
+        assertArrayEquals(Sun.riseAndSet(day, 51.51, -0.13, zone), WallpaperMood.sun(day, "51.51", " -0.13 ", zone));
         int[] defaults = {WallpaperMood.DEFAULT_SUNRISE, WallpaperMood.DEFAULT_SUNSET};
         assertArrayEquals(defaults, WallpaperMood.sun(day, "", "", zone));
-        assertArrayEquals(defaults, WallpaperMood.sun(day, "37.35", "", zone));
-        assertArrayEquals(defaults, WallpaperMood.sun(day, "north", "-121.98", zone));
+        assertArrayEquals(defaults, WallpaperMood.sun(day, "51.51", "", zone));
+        assertArrayEquals(defaults, WallpaperMood.sun(day, "north", "-0.13", zone));
         // the sun does not set at the pole in June: the defaults
         assertArrayEquals(defaults, WallpaperMood.sun(LocalDate.of(2026, 6, 21), "89.9", "0", ZoneId.of("UTC")));
     }
