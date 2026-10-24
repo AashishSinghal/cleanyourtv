@@ -16,6 +16,8 @@ that TV needed, plus a few looks. Everything new is off until a theme turns it o
 | **Quiet buttons and a calm layout** (`quiet_buttons`, `home_layout` `"calm"`) | Small round top-bar buttons that slide their label out only while focused, with a green dot while online; `calm` also moves the time and weather into a fixed header. |
 | **Settings button** | `settings_key_panel` also opens the quick settings panel from the Settings button. |
 | **Emulator kit** (`my-tv/sim/sim.sh`) | Drives the Android TV emulator like the remote, to try changes before the TV. |
+| **Photo screensaver sync** (`my-tv/tvphotos/`) | Keeps the `addons/photo-screensaver` pictures on the TV in step with a folder on a Mac: shrinks and renames them, sends only what changed (checked by reading each file's checksum back from the TV), and removes what you deleted. The add-on's own `sync.sh` cannot list the TV's folder on Fire OS, so it re-sends everything and never removes anything there. |
+| **Xiaomi FX 55" Fire TV** (`my-tv/xiaomi-fx-55/`) | Notes and a 49-package debloat list for a second Fire TV (AFTNE4E43F, Fire OS 8.1.8.5), including the Vewd broadcaster apps that show up in the launcher. |
 
 The display switches and the time-of-day half of wallpaper moods started here and are now upstream, without network:
 `wifi_status_color`, `cinematic_dots`, `cinematic_scrim`, `cinematic_art`, `cinematic_white_focus` and `wallpaper_moods`

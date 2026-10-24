@@ -13,6 +13,8 @@ What runs on our TCL Fire TV (AFTDEC012E, Fire OS 8.1.8.5) besides the launcher 
   button leads to an app that is not available (the Amazon Music button). Enable with
   `settings put secure enabled_accessibility_services local.homereturn/.HomeReturnService` and
   `settings put secure accessibility_enabled 1`.
+- `tvphotos/`: a Mac-side command that syncs a folder of photos to the photo screensaver add-on (see its README).
+- `xiaomi-fx-55/`: notes and the debloat list for a Xiaomi FX 55" Fire TV (AFTNE4E43F, Fire OS 8.1.8.5).
 
-Both are built with the toolchain in `~/firetv-build` (`source ~/firetv-build/env.sh`, then
+The launcher and Home Return are built with the toolchain in `~/firetv-build` (`source ~/firetv-build/env.sh`, then
 `./gradlew --no-daemon assembleRelease`) and signed with its local debug key.

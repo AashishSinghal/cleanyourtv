@@ -1,0 +1,6 @@
+#!/bin/bash
+# Runs tvphotos.py with this repo's tools venv:
+#   python3 -m venv tools/venv && tools/venv/bin/pip install -r tools/requirements.txt
+HERE="$(cd "$(dirname "$0")" && pwd)"
+REPO="$(cd "$HERE/../.." && pwd)"
+exec "$REPO/tools/venv/bin/python" -I "$HERE/tvphotos.py" "$@"
