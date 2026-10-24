@@ -68,6 +68,24 @@
     <string name="on">On</string>
     <string name="off">Off</string>
     <string name="enable">Enable</string>
+    <!-- Remote buttons screen: English only for now, hence translatable="false". -->
+    <string name="remote_buttons" translatable="false">Remote buttons</string>
+    <string name="remote_buttons_hint" translatable="false">Open an app from a coloured or app button on your remote.</string>
+    <string name="remote_keys_add" translatable="false">Add a button: press it on the remote</string>
+    <string name="remote_keys_cancel" translatable="false">Cancel</string>
+    <string name="remote_keys_listening" translatable="false">Press the button on your remote now. Press Back to cancel.</string>
+    <string name="remote_keys_protected_hint" translatable="false">Navigation, Back, Home, power, volume, playback, channel, input, voice and typing buttons cannot be assigned. They keep working as they do.</string>
+    <string name="remote_keys_assigned" translatable="false">Assigned buttons</string>
+    <string name="remote_keys_empty" translatable="false">No buttons assigned yet.</string>
+    <string name="remote_keys_choose" translatable="false">Open which app with %1$s?</string>
+    <string name="remote_keys_remove" translatable="false">Remove</string>
+    <string name="remote_keys_saved" translatable="false">%1$s opens %2$s</string>
+    <string name="remote_keys_removed" translatable="false">Removed</string>
+    <string name="remote_keys_cant" translatable="false">That button cannot be assigned.</string>
+    <string name="remote_keys_helper_off" translatable="false">The remote key helper is off, so buttons cannot be read. Turn it on first (see my-tv/xiaomi-fx-55/README.md).</string>
+    <string name="remote_keys_from_theme" translatable="false">theme</string>
+    <string name="remote_keys_not_installed" translatable="false">not installed</string>
+    <string name="remote_keys_no_apps" translatable="false">No apps found.</string>
     <string name="input_key_service_description">Opens the input switcher when the remote\'s Input button is pressed.</string>
     <string name="home_key_name">Home button</string>
     <string name="home_key_description">Makes the remote\'s Home button open this launcher.</string>

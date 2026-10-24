@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FF101419"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="72dp"
+        android:paddingEnd="72dp"
+        android:paddingTop="38dp"
+        android:paddingBottom="38dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/remote_buttons"
+            android:textColor="#FFFFFFFF"
+            android:textSize="34sp" />
+
+        <TextView
+            android:id="@+id/learnRow"
+            style="@style/SettingsRow"
+            android:layout_marginTop="28dp"
+            android:text="@string/remote_keys_add" />
+
+        <TextView
+            android:id="@+id/learnNote"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="7dp"
+            android:text="@string/remote_keys_protected_hint"
+            android:textColor="#FFACB8C1"
+            android:textSize="14sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:text="@string/remote_keys_assigned"
+            android:textColor="#FFFFFFFF"
+            android:textSize="22sp" />
+
+        <LinearLayout
+            android:id="@+id/assignedRows"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <TextView
+            android:id="@+id/emptyNote"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="@string/remote_keys_empty"
+            android:textColor="#FFACB8C1"
+            android:textSize="16sp" />
+    </LinearLayout>
+</ScrollView>
