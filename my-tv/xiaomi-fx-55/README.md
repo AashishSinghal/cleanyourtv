@@ -6,6 +6,26 @@ Xiaomi FX series 55" 4K Fire TV (L55MB-FIN), Amazon model `AFTNE4E43F`, Fire OS 
 | File | What it is |
 |---|---|
 | `debloat.txt` | The 49 packages that were disabled, grouped and commented |
+| `theme/config.json` | The remote's red, green, yellow and blue buttons as app shortcuts |
+
+## Remote buttons
+
+The Amazon Fire TV Remote's four coloured buttons do nothing on Fire OS. They send scancodes 398 (red), 399 (green),
+400 (yellow) and 401 (blue), which the launcher's `InputKeyService` can turn into app launches through `app_keys`:
+red SmartTube, green Spotify, yellow Crunchyroll, blue JioHotstar (Netflix and Prime Video have their own buttons).
+Pressing each button on the real remote opened the right app.
+
+```
+adb shell settings put secure enabled_accessibility_services "local.homereturn/.HomeReturnService:com.gathin.tvhome/.InputKeyService"
+adb shell settings put secure accessibility_enabled 1
+TV_HOST=<tv ip> tools/theme.sh my-tv/xiaomi-fx-55/theme
+```
+
+To change a button, edit the package in `theme/config.json` and run `theme.sh` again. To find other buttons' scancodes, run
+`tools/tv.py 'getevent -lt'` and press them (the code is the `KEY_...` number: `KEY_RED` is 398). Keys sent with
+`adb shell input keyevent` never reach the service, so test with the real remote. `theme.sh --reset` removes the theme.
+A force stop of the launcher (a cleaner app, Settings > Apps) switches its accessibility services off; run the two
+`settings put` lines again.
 
 ## What worked
 
