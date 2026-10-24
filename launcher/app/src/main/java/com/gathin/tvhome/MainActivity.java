@@ -1750,6 +1750,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 weatherLoading = false;
                 if (got == null || isDestroyed()) return;
                 weather = got;
+                wallpaperPlayer.setWeather(got);
                 bindWeather();
             });
         });

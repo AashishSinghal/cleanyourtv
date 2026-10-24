@@ -46,6 +46,27 @@ public class WeatherTest {
     }
 
     @Test
+    public void codeAtIsTheHourThatHoldsNow() {
+        List<Weather.Hour> hours = new ArrayList<>();
+        for (int i = 0; i < 3; i++) hours.add(new Weather.Hour(TODAY.atTime(10 + i, 0), 20, 60 + i, true));
+        Weather w = new Weather("", 0, 0, 20, 20, 3, true, hours, Arrays.asList(TODAY),
+                Arrays.asList(new double[]{25, 15}), Arrays.asList(new LocalDateTime[][]{{TODAY.atTime(7, 0), TODAY.atTime(18, 0)}}));
+        assertEquals(60, w.codeAt(TODAY.atTime(10, 0)));
+        assertEquals(61, w.codeAt(TODAY.atTime(11, 59)));
+        assertEquals(62, w.codeAt(TODAY.atTime(12, 30)));
+        assertEquals(3, w.codeAt(TODAY.atTime(13, 0)));   // past the answer's hours: the current code
+        assertEquals(3, w.codeAt(TODAY.atTime(9, 59)));
+    }
+
+    @Test
+    public void sunOnIsForTheAskedDayOnly() {
+        Weather w = weather(0, 0);
+        assertEquals(TODAY.atTime(6, 10), w.sunOn(TODAY)[0]);
+        assertEquals(TODAY.plusDays(1).atTime(18, 4), w.sunOn(TODAY.plusDays(1))[1]);
+        assertNull(w.sunOn(TODAY.plusDays(2)));
+    }
+
+    @Test
     public void highAndLowAreForTheAskedDayOnly() {
         Weather w = weather(0, 0);
         assertEquals(29, w.highLow(TODAY)[0], 0);

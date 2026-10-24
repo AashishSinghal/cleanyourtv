@@ -249,7 +249,10 @@
          noon, evening until half an hour after sunset, night the rest, with the sun at latitude and longitude (07:00
          and 18:30 without them). It moves to the new group as soon as the time of day changes. A missing or empty
          group falls back to the whole collection; empty rotates through every picture. A theme can set
-         "wallpaper_moods" as an object. -->
+         "wallpaper_moods" as an object.
+         my-tv: with weather on, "rain": [...] (drizzle, rain, showers, storms) and "fog": [...] groups win while the
+         forecast's current hour has them, and the forecast's sunrise and sunset come first; a rain or fog group
+         without pictures falls back to the time of day's. -->
     <string name="wallpaper_moods" translatable="false"></string>
     <!-- Hold OK on a tile opens a small menu: Move (picks the tile up for reordering), Remove from Home (only with
          app_library) and App info. false keeps the old behaviour: holding OK opens the app's App info page.

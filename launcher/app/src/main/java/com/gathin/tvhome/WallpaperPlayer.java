@@ -60,6 +60,8 @@ final class WallpaperPlayer {
     private final String latitude, longitude;
     private LocalDate sunDay;
     private int[] sun;
+    /** my-tv: the last forecast, for wallpaper_moods' rain and fog and the day's sunrise and sunset; null without one. */
+    private Weather weather;
 
     WallpaperPlayer(Context context, FrameLayout root, Config config) {
         this.root = root;
@@ -73,6 +75,11 @@ final class WallpaperPlayer {
         moods = config.wallpaperMoods;
         latitude = moods.isEmpty() ? "" : context.getString(R.string.latitude);
         longitude = moods.isEmpty() ? "" : context.getString(R.string.longitude);
+        // my-tv: the cached forecast, so the first picture already fits the weather; Home hands over newer ones.
+        if (!moods.isEmpty() && config.weatherEnabled()) {
+            weather = Weather.load(context, Weather.key(config.weatherLatitude, config.weatherLongitude,
+                    config.weatherFahrenheit));
+        }
         // Playback state belongs to one collection. Changing the collection starts from its first
         // picture instead of resuming a filename that belonged to the previous one.
         String collection = collectionKey(files);
@@ -143,7 +150,14 @@ final class WallpaperPlayer {
             sunDay = now.toLocalDate();
             sun = WallpaperMood.sun(sunDay, latitude, longitude, ZoneId.systemDefault());
         }
-        return WallpaperMood.select(files, moods, WallpaperMood.timeOfDay(now.getHour() * 60 + now.getMinute(), sun[0], sun[1]));
+        // my-tv: rain or fog in the forecast's current hour comes first, and the forecast's sunrise and sunset.
+        return WallpaperMood.select(files, moods,
+                WallpaperMood.at(weather, System.currentTimeMillis(), ZoneId.systemDefault(), sun));
+    }
+
+    /** my-tv: a newer forecast from Home; the next update() moves to its rain, fog or time-of-day group if it changed. */
+    void setWeather(Weather weather) {
+        if (!moods.isEmpty()) this.weather = weather;
     }
 
     void close() {

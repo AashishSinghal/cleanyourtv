@@ -191,6 +191,20 @@ final class Weather {
         return out;
     }
 
+    /** The weather code of the hour that holds now, or the current one when the answer has no such hour. */
+    int codeAt(LocalDateTime now) {
+        for (Hour hour : hours) {
+            if (!hour.time.isAfter(now) && now.isBefore(hour.time.plusHours(1))) return hour.code;
+        }
+        return code;
+    }
+
+    /** The day's {sunrise, sunset}, or null when the answer does not cover that day. */
+    LocalDateTime[] sunOn(LocalDate day) {
+        int i = days.indexOf(day);
+        return i >= 0 && i < sun.size() ? sun.get(i) : null;
+    }
+
     /** The day's {high, low}, or null when the answer does not cover that day. */
     double[] highLow(LocalDate day) {
         int i = days.indexOf(day);
