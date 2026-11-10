@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -70,6 +71,26 @@ final class Media {
             if (result.size() == MAX_FILES) break;
         }
         return result;
+    }
+
+    /** The choices the settings screen steps through for the seconds per picture. */
+    private static final int[] SECONDS_STEPS = {5, 10, 15, 20, 30, 60, 120, 300};
+
+    /** The next step above {@code current}, wrapping to the first. */
+    static int nextSeconds(int current) {
+        for (int step : SECONDS_STEPS) if (step > current) return step;
+        return SECONDS_STEPS[0];
+    }
+
+    /** A random file other than {@code previous} (by name), or the only one; null when there are none. */
+    static File randomOther(List<File> files, String previous, Random random) {
+        if (files.isEmpty()) return null;
+        if (files.size() == 1) return files.get(0);
+        File pick;
+        do {
+            pick = files.get(random.nextInt(files.size()));
+        } while (pick.getName().equals(previous));
+        return pick;
     }
 
     /** The file after {@code previous} by name, wrapping around; the first one when previous is gone. */

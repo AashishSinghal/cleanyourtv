@@ -67,6 +67,7 @@ final class Slides {
     private volatile boolean stillNext;
     private final SharedPreferences preferences;
     private final long interval;
+    private final Options choices;
     private final int width;
     private final int height;
     private boolean running;
@@ -104,7 +105,8 @@ final class Slides {
         height = metrics.heightPixels;
         preferences = context.getSharedPreferences("photo_dream", Context.MODE_PRIVATE);
         File dir = context.getExternalFilesDir(null);
-        interval = Media.seconds(Photos.read(dir == null ? null : new File(dir, Media.SECONDS))) * 1000L;
+        choices = Options.load(context);
+        interval = Options.seconds(context) * 1000L;
         images = dir == null ? new ArrayList<>() : Media.list(new File(dir, Media.PICTURES));
         if (caption != null) caption.setAlpha(0f);
     }
@@ -149,12 +151,16 @@ final class Slides {
     private void showNext() {
         if (!running || images.isEmpty() || decoder == null) return;
         decoder.execute(() -> {
+            // One list for the whole try: the album sync may swap images while this runs.
+            List<File> files = images;
+            if (files.isEmpty()) return;
             Bitmap bitmap = null;
             File clip = null;
             String date = "";
             // Skip unreadable pictures, but stop after one round so a folder of broken files doesn't spin.
-            for (int tries = 0; tries < images.size() && bitmap == null && clip == null; tries++) {
-                File file = Media.next(images, preferences.getString("image", ""));
+            for (int tries = 0; tries < files.size() && bitmap == null && clip == null; tries++) {
+                String previous = preferences.getString("image", "");
+                File file = choices.shuffle ? Media.randomOther(files, previous, random) : Media.next(files, previous);
                 preferences.edit().putString("image", file.getName()).apply();
                 if (Media.video(file.getName())) {
                     clip = file;
@@ -217,7 +223,7 @@ final class Slides {
         float dx = (random.nextFloat() - 0.5f) * width * (ZOOM - 1f);
         float dy = (random.nextFloat() - 0.5f) * height * (ZOOM - 1f);
         // A portrait is shown whole over its backdrop; zooming or drifting it would cut off its top or bottom.
-        if (still) {
+        if (still || choices.still) {
             from = 1f;
             to = 1f;
             dx = 0f;
@@ -400,7 +406,7 @@ final class Slides {
             options.inPreferredConfig = Bitmap.Config.RGB_565;
             Bitmap decoded = BitmapFactory.decodeFile(file.getPath(), options);
             if (decoded == null) return null;
-            stillNext = Media.portrait(w, h);
+            stillNext = Media.portrait(w, h) && !choices.cropPortraits;
             if (stillNext) decoded = withBackdrop(decoded);
             Bitmap gpu = decoded.copy(Bitmap.Config.HARDWARE, false);
             if (gpu == null) return decoded;

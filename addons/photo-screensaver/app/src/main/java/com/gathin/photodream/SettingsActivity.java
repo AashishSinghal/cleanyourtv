@@ -8,6 +8,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.text.format.DateUtils;
 import android.util.TypedValue;
 import android.view.View;
 import android.widget.Button;
@@ -29,6 +30,10 @@ public class SettingsActivity extends Activity {
     private Switch skySwitch;
     private TextView weatherStatus;
     private Button locationButton;
+    private Button secondsButton;
+    private TextView albumStatus;
+    private Button albumButton;
+    private boolean syncing;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,6 +50,16 @@ public class SettingsActivity extends Activity {
         title.setPadding(0, 0, 0, dp(16));
         list.addView(title);
 
+        secondsButton = new Button(this);
+        secondsButton.setOnClickListener(v -> {
+            preferences.edit().putInt(Options.SECONDS, Media.nextSeconds(Options.seconds(this))).apply();
+            showSeconds();
+        });
+        list.addView(secondsButton, wrap());
+        showSeconds();
+        list.addView(toggle(Options.SHUFFLE, R.string.option_shuffle, null));
+        list.addView(toggle(Options.STILL, R.string.option_still, null));
+        list.addView(toggle(Options.CROP, R.string.option_crop, null));
         list.addView(toggle(Options.CLOCK, R.string.option_clock, null));
         list.addView(toggle(Options.DATES, R.string.option_dates, null));
         list.addView(toggle(Options.PRINTS, R.string.option_prints, on -> skySwitch.setEnabled(on)));
@@ -62,6 +77,20 @@ public class SettingsActivity extends Activity {
         locationButton.setOnClickListener(v -> openLocationSettings());
         list.addView(locationButton, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        albumStatus = new TextView(this);
+        albumStatus.setPadding(dp(8), dp(16), 0, dp(8));
+        list.addView(albumStatus);
+        albumButton = new Button(this);
+        albumButton.setOnClickListener(v -> {
+            syncing = Album.start(this, () -> {
+                syncing = false;
+                showAlbum();
+            }, true);
+            showAlbum();
+        });
+        list.addView(albumButton, wrap());
+        showAlbum();
 
         Button preview = new Button(this);
         preview.setText(R.string.preview);
@@ -81,6 +110,24 @@ public class SettingsActivity extends Activity {
     protected void onResume() {
         super.onResume();
         updateWeatherStatus();   // back from the TV's location settings
+    }
+
+    private void showSeconds() {
+        secondsButton.setText(getString(R.string.settings_seconds, Options.seconds(this)));
+    }
+
+    private void showAlbum() {
+        boolean linked = Album.linked(this);
+        long last = Album.lastSync(this);
+        albumStatus.setText(!linked ? getString(R.string.album_none)
+                : getString(R.string.album_status, Album.count(this), last == 0 ? getString(R.string.album_never)
+                        : DateUtils.getRelativeTimeSpanString(last, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS)));
+        albumButton.setText(syncing ? R.string.album_syncing : R.string.album_sync_now);
+        albumButton.setVisibility(linked ? View.VISIBLE : View.GONE);
+    }
+
+    private static LinearLayout.LayoutParams wrap() {
+        return new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
     }
 
     private interface Changed {

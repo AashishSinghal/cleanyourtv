@@ -11,17 +11,25 @@ holding OK (or Menu) opens the settings, Back leaves.
 
 ## Options
 
-All off by default, which is the plain full-screen slideshow above. Switch them on in the screensaver's own
-settings (TV settings > screensaver > Photos > settings), or by holding OK (or pressing Menu) in the card's
-slideshow. Google TV has no settings entry for other screensavers, so there it is the slideshow only:
+All off by default (the seconds per picture aside), which is the plain full-screen slideshow above. Change them in the
+screensaver's own settings (TV settings > screensaver > Photos > settings), or by holding OK (or pressing Menu) in the
+slideshow, which you start by opening the app (the **Photo screensaver** tile, or the card on cleanyourtv's Home).
+Google TV has no settings entry for other screensavers, so there use the app:
 
 | Option | What it does |
 |---|---|
+| Seconds per picture | The first row: press it to step through 5, 10, 15, 20, 30, 60, 120 and 300. It wins over `seconds.txt` and `SECONDS_PER_PICTURE` of `sync.sh`, which then only give the starting value |
+| Random order | Pictures in random order instead of by file name, never the same one twice in a row |
+| Still pictures | No zoom or drift |
+| Crop portraits | A portrait fills the screen (cropped) instead of being shown whole over a blurred backdrop |
 | Time and date | A line along the bottom with the time and the date, moved a little every minute against burn-in |
 | When a picture was taken | Month and year, from a name ending in the date (`trip-20231202.jpg`) or else the camera's EXIF date |
 | Three prints | Three pictures at a time as tilted prints, the whole picture, never cropped; clips are skipped |
 | Sky | Behind the prints, a sky that follows the time of day |
 | Weather | Temperature and a symbol, from the TV's rough location and Open-Meteo, every 30 minutes |
+| Sync the album now | With a Google Photos album linked (below): how many album pictures the TV has and when it last synced, and a button to sync at once |
+
+Random order, still pictures and crop portraits apply to the full-screen slideshow, not to the prints.
 
 The weather needs location access (asked when you switch it on) and the TV's location services on; the
 settings say when they are off and open the TV's location settings. The prints, the sky and the date on a

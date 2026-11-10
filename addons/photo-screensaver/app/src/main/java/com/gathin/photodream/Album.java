@@ -81,18 +81,52 @@ final class Album {
         }
     }
 
-    /**
-     * Syncs in the background when album.txt holds a valid link and the last good sync of that link is over an hour
-     * old. {@code done} runs on the main thread afterwards, also after a failed try, so the slideshow lists the
-     * folder again.
-     */
-    static void start(Context context, Runnable done) {
+    /** The link in album.txt, when it is a valid one. */
+    private static String link(Context context) {
         File dir = context.getExternalFilesDir(null);
         String link = dir == null ? null : read(new File(dir, Media.ALBUM));
-        SharedPreferences prefs = context.getSharedPreferences("photo_dream", Context.MODE_PRIVATE);
-        String key = SYNCED + (link == null ? 0 : link.hashCode());   // a new link syncs at once
-        if (!validLink(link) || System.currentTimeMillis() - prefs.getLong(key, 0) < EVERY_MS
-                || !RUNNING.compareAndSet(false, true)) return;
+        return validLink(link) ? link : null;
+    }
+
+    private static String key(String link) {
+        return SYNCED + link.hashCode();   // a new link syncs at once
+    }
+
+    private static SharedPreferences prefs(Context context) {
+        return context.getSharedPreferences("photo_dream", Context.MODE_PRIVATE);
+    }
+
+    /** True when album.txt holds a valid link. */
+    static boolean linked(Context context) {
+        return link(context) != null;
+    }
+
+    /** When the album was last synced (ms since 1970), 0 for never. */
+    static long lastSync(Context context) {
+        String link = link(context);
+        return link == null ? 0 : prefs(context).getLong(key(link), 0);
+    }
+
+    /** How many pictures from the album are on the TV. */
+    static int count(Context context) {
+        File dir = context.getExternalFilesDir(null);
+        File[] files = dir == null ? null : new File(dir, Media.PICTURES).listFiles((d, n) -> n.startsWith(PREFIX));
+        return files == null ? 0 : files.length;
+    }
+
+    /**
+     * Syncs in the background when album.txt holds a valid link and the last good sync of that link is over an hour
+     * old (whatever its age when {@code force}). {@code done} runs on the main thread afterwards, also after a failed
+     * try, so the slideshow lists the folder again. False: nothing was started (no link, too soon, or already syncing).
+     */
+    static boolean start(Context context, Runnable done, boolean force) {
+        File dir = context.getExternalFilesDir(null);
+        String link = link(context);
+        if (dir == null || link == null) return false;
+        SharedPreferences prefs = prefs(context);
+        String key = key(link);
+        if (!force && System.currentTimeMillis() - prefs.getLong(key, 0) < EVERY_MS) return false;
+        if (!RUNNING.compareAndSet(false, true)) return false;
         Handler main = new Handler(Looper.getMainLooper());
         new Thread(() -> {
             try {
@@ -105,6 +139,7 @@ final class Album {
                 main.post(done);
             }
         }, "album-sync").start();
+        return true;
     }
 
     private static void sync(File pictures, String link) throws IOException {
