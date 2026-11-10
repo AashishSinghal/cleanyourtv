@@ -67,6 +67,32 @@ first run is remembered for `--off`; `build-and-install.sh --uninstall` does `--
 `IDLE_MINUTES` sets `screen_off_timeout`, after which the TV starts its screensaver. You can also pick
 Photos yourself in the TV's screensaver settings.
 
+## Google Photos album
+
+Instead of sending pictures from a computer, the TV can fetch a Google Photos album by its share link. In Google Photos
+open the album, Share, Create link (anyone with the link can view it), and give the TV that link:
+
+```sh
+TV_HOST=192.168.1.50 tools/venv/bin/python -I tools/tv.py "printf '%s' '<the link>' > /data/local/tmp/album.txt; content write --uri content://com.gathin.photodream.files/album.txt < /data/local/tmp/album.txt; rm -f /data/local/tmp/album.txt"
+```
+
+Each time the screensaver starts (at most once an hour for a link) it reads the album page, downloads new pictures at
+screen size (1920x1080 at most, 80 to 300 KB each) and removes pictures you took out of the album. Only files named
+`gp-*.jpg` are touched, so pictures sent any other way stay. With no network, or when Google changes the page, nothing is
+deleted and the pictures already on the TV keep showing; the next start tries again. A new link syncs at once.
+
+- It reads the public share page, not an API: Google closed its Photos API to other people's albums in March 2025, so this
+  can stop working if the page changes. Anyone who has the link can see the album.
+- At most 100 pictures in total (the first ones on the page); a video shows as a still; a picture you edit keeps its
+  name and is not fetched again.
+- To stop: `content delete --uri content://com.gathin.photodream.files/album.txt`. The downloaded pictures stay until you
+  run `content delete --uri content://com.gathin.photodream.files/pictures` (that removes every picture).
+
+## Portrait pictures
+
+A picture taller than it is wide is shown whole and centred over a blurred, zoomed-in copy of itself, and stays still
+instead of drifting, so nothing is cropped. `BLUR` in `Slides.java` sets how soft the backdrop is (higher is softer).
+
 ## Memory
 
 At most two screen-sized pictures are held, as GPU bitmaps, and one hardware video player. A 4K picture
@@ -75,10 +101,10 @@ is decoded at screen size. On a TCL 43P69K (1.5 GB) a 1080p clip played with the
 
 ## Permissions
 
-- **Network: `INTERNET` and `ACCESS_COARSE_LOCATION`**, used only by the weather option, which is off by
-  default. With it on, the TV's rough location, rounded to two decimals (about 1 km), goes to
+- **Network: `INTERNET` and `ACCESS_COARSE_LOCATION`**, used by the weather option and the Google Photos album,
+  both off by default. With it on, the TV's rough location, rounded to two decimals (about 1 km), goes to
   `api.open-meteo.com` every 30 minutes while the screensaver runs, and the temperature and weather code
-  come back, with whether it is day. Nothing else goes out; with the weather off, the app makes no network connection at all.
+  come back, with whether it is day. Nothing else goes out. With the weather off and no album link set, the app makes no network connection at all; with an album link it connects to `photos.google.com` and `lh3.googleusercontent.com` when the screensaver starts.
 - No storage permission and no background service: the pictures stay on the TV in the app's own folder
   (`Android/data/com.gathin.photodream/files/pictures`), removed with the app.
 - **`SlideshowActivity`** (exported) is the module card; **`SettingsActivity`** (exported) is opened by the
@@ -93,4 +119,5 @@ is decoded at screen size. On a TCL 43P69K (1.5 GB) a 1080p clip played with the
 
 ## Tested on
 
-TCL 43P69K (G10, Google TV 12, Realtek), Netherlands.
+TCL 43P69K (G10, Google TV 12, Realtek), Netherlands. The Google Photos album and the portrait backdrop: Xiaomi FX 55" Fire TV
+(AFTNE4E43F, Fire OS 8.1.8.5), a 36-picture album with 11 portraits.

@@ -7,7 +7,10 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.media.MediaPlayer;
 import android.os.Handler;
@@ -40,6 +43,8 @@ final class Slides {
     private static final long FADE_MS = 1500L;
     /** How far a picture zooms in over its time on screen; it drifts at most half the extra width. */
     private static final float ZOOM = 1.12f;
+    /** The backdrop of a portrait is the picture shrunk to about this fraction of the screen width, then stretched back. */
+    private static final int BLUR = 32;
 
     private final Context context;
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -57,7 +62,9 @@ final class Slides {
     private File pendingClip;
     /** Bumped for every clip so callbacks of a released player are ignored. */
     private int clipGeneration;
-    private final List<File> images;
+    private volatile List<File> images;
+    /** The picture decoded last is a portrait shown whole: it stays still instead of drifting. */
+    private volatile boolean stillNext;
     private final SharedPreferences preferences;
     private final long interval;
     private final int width;
@@ -111,6 +118,15 @@ final class Slides {
         return view;
     }
 
+    /** Lists the pictures again (the album sync adds and removes some) and starts the loop if it had nothing to show. */
+    void reload() {
+        File dir = context.getExternalFilesDir(null);
+        boolean wasEmpty = images.isEmpty();
+        images = dir == null ? new ArrayList<>() : Media.list(new File(dir, Media.PICTURES));
+        empty.setVisibility(images.isEmpty() ? View.VISIBLE : View.GONE);
+        if (running && wasEmpty) showNext();
+    }
+
     void start() {
         running = true;
         empty.setVisibility(images.isEmpty() ? View.VISIBLE : View.GONE);
@@ -148,6 +164,7 @@ final class Slides {
                 }
             }
             Bitmap shown = bitmap;
+            boolean shownStill = stillNext;
             File playing = clip;
             String shownDate = date;
             handler.post(() -> {
@@ -161,7 +178,7 @@ final class Slides {
                     return;
                 }
                 if (shown != null) {
-                    crossfade(shown);
+                    crossfade(shown, shownStill);
                     showCaption(shownDate);
                 }
                 // A single picture still drifts on: it fades into itself with a new zoom.
@@ -183,7 +200,7 @@ final class Slides {
         }).start();
     }
 
-    private void crossfade(Bitmap bitmap) {
+    private void crossfade(Bitmap bitmap, boolean still) {
         ImageView incoming = back;
         ImageView outgoing = front;
         back = outgoing;
@@ -199,6 +216,13 @@ final class Slides {
         float to = zoomIn ? ZOOM : 1f;
         float dx = (random.nextFloat() - 0.5f) * width * (ZOOM - 1f);
         float dy = (random.nextFloat() - 0.5f) * height * (ZOOM - 1f);
+        // A portrait is shown whole over its backdrop; zooming or drifting it would cut off its top or bottom.
+        if (still) {
+            from = 1f;
+            to = 1f;
+            dx = 0f;
+            dy = 0f;
+        }
         incoming.setAlpha(0f);
         ObjectAnimator fade = ObjectAnimator.ofFloat(incoming, View.ALPHA, 0f, 1f).setDuration(FADE_MS);
         ObjectAnimator drift = ObjectAnimator.ofPropertyValuesHolder(incoming,
@@ -305,6 +329,57 @@ final class Slides {
         if (old instanceof Bitmap) ((Bitmap) old).recycle();
     }
 
+    /** A portrait whole and centred, over a blurred, zoomed-in copy of itself that fills the screen. */
+    private Bitmap withBackdrop(Bitmap photo) {
+        Bitmap out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(out);
+        Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
+        // The blur: halve the picture down to a few dozen pixels wide, then double it back up to half the screen.
+        // Doubling in steps smooths it; one big stretch would show the pixels as blocks.
+        Bitmap soft = grow(shrink(photo, width / BLUR), width / 2);
+        float cover = Math.max((float) width / soft.getWidth(), (float) height / soft.getHeight());
+        int coverW = Math.round(soft.getWidth() * cover);
+        int coverH = Math.round(soft.getHeight() * cover);
+        canvas.drawBitmap(soft, null, new Rect((width - coverW) / 2, (height - coverH) / 2,
+                (width + coverW) / 2, (height + coverH) / 2), paint);
+        soft.recycle();
+        canvas.drawColor(0x66000000);   // dim it, so the photo stands out
+        int[] at = Media.fit(photo.getWidth(), photo.getHeight(), width, height);
+        Bitmap whole = shrink(photo, at[2]);
+        canvas.drawBitmap(whole, null, new Rect(at[0], at[1], at[0] + at[2], at[1] + at[3]), paint);
+        if (whole != photo) whole.recycle();
+        photo.recycle();
+        return out;
+    }
+
+    /** The picture halved while it stays at least minWidth wide; one bilinear step is too coarse for a big drop. */
+    private static Bitmap shrink(Bitmap src, int minWidth) {
+        Bitmap current = src;
+        while (current.getWidth() / 2 >= Math.max(1, minWidth) && current.getHeight() / 2 >= 1) {
+            Bitmap half = resize(current, current.getWidth() / 2, current.getHeight() / 2);
+            if (current != src) current.recycle();
+            current = half;
+        }
+        return current;
+    }
+
+    /** The picture doubled until it is at least toWidth wide. The result is a new bitmap, src is left alone. */
+    private static Bitmap grow(Bitmap src, int toWidth) {
+        Bitmap current = resize(src, src.getWidth(), src.getHeight());
+        while (current.getWidth() < toWidth) {
+            Bitmap twice = resize(current, current.getWidth() * 2, current.getHeight() * 2);
+            current.recycle();
+            current = twice;
+        }
+        return current;
+    }
+
+    private static Bitmap resize(Bitmap src, int w, int h) {
+        Bitmap out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        new Canvas(out).drawBitmap(src, null, new Rect(0, 0, w, h), new Paint(Paint.FILTER_BITMAP_FLAG));
+        return out;
+    }
+
     private Bitmap decode(File file) {
         try {
             BitmapFactory.Options options = new BitmapFactory.Options();
@@ -325,6 +400,8 @@ final class Slides {
             options.inPreferredConfig = Bitmap.Config.RGB_565;
             Bitmap decoded = BitmapFactory.decodeFile(file.getPath(), options);
             if (decoded == null) return null;
+            stillNext = Media.portrait(w, h);
+            if (stillNext) decoded = withBackdrop(decoded);
             Bitmap gpu = decoded.copy(Bitmap.Config.HARDWARE, false);
             if (gpu == null) return decoded;
             decoded.recycle();

@@ -15,6 +15,7 @@ import java.io.FileNotFoundException;
  *
  *   content write  --uri content://com.gathin.photodream.files/pictures/sea.jpg < /data/local/tmp/sea.jpg
  *   content write  --uri content://com.gathin.photodream.files/seconds.txt < /data/local/tmp/seconds.txt
+ *   content write  --uri content://com.gathin.photodream.files/album.txt < /data/local/tmp/album.txt
  *   content delete --uri content://com.gathin.photodream.files/pictures/sea.jpg
  *   content delete --uri content://com.gathin.photodream.files/pictures      (every picture and clip)
  */

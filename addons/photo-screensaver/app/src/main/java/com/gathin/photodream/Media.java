@@ -12,6 +12,8 @@ import java.util.regex.Pattern;
 final class Media {
     static final String PICTURES = "pictures";
     static final String SECONDS = "seconds.txt";
+    /** The share link of a Google Photos album (Album). */
+    static final String ALBUM = "album.txt";
     static final int DEFAULT_SECONDS = 20;
     static final int MAX_FILES = 100;
     static final long IMAGE_MAX = 10L * 1024 * 1024;
@@ -40,7 +42,9 @@ final class Media {
     /** The path under the files dir that a provider URI may write or delete, or null. */
     static String path(List<String> segments) {
         if (segments == null) return null;
-        if (segments.size() == 1 && SECONDS.equals(segments.get(0))) return SECONDS;
+        if (segments.size() == 1 && (SECONDS.equals(segments.get(0)) || ALBUM.equals(segments.get(0)))) {
+            return segments.get(0);
+        }
         if (segments.size() == 2 && PICTURES.equals(segments.get(0)) && file(segments.get(1))) {
             return PICTURES + "/" + segments.get(1);
         }
@@ -96,6 +100,19 @@ final class Media {
         if (m == null || !m.find()) return null;
         int year = Integer.parseInt(m.group(1)), month = Integer.parseInt(m.group(2));
         return year >= 1900 && month >= 1 && month <= 12 ? new int[]{year, month} : null;
+    }
+
+    /** A picture taller than it is wide: the slideshow shows it whole over a blurred copy, not cropped. */
+    static boolean portrait(int width, int height) {
+        return height > width;
+    }
+
+    /** {left, top, width, height} of a picture scaled to fit inside the screen and centred. */
+    static int[] fit(int width, int height, int screenW, int screenH) {
+        float scale = Math.min((float) screenW / width, (float) screenH / height);
+        int w = Math.round(width * scale);
+        int h = Math.round(height * scale);
+        return new int[]{(screenW - w) / 2, (screenH - h) / 2, w, h};
     }
 
     static boolean accepted(int width, int height) {

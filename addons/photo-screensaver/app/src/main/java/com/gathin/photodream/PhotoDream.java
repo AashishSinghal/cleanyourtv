@@ -20,6 +20,7 @@ public class PhotoDream extends DreamService {
     public void onDreamingStarted() {
         super.onDreamingStarted();
         if (scene != null) scene.start();
+        Album.start(this, () -> { if (scene != null) scene.reload(); });
     }
 
     @Override

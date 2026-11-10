@@ -109,6 +109,11 @@ final class Scene {
         }
     }
 
+    /** Lists the pictures again: the album sync may have added or removed some. */
+    void reload() {
+        if (slides != null) slides.reload();
+    }
+
     void stop() {
         running = false;
         handler.removeCallbacksAndMessages(null);
