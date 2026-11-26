@@ -18,7 +18,21 @@ Result: 52 packages disabled (1 was before). Still enabled on purpose: `com.amaz
 Take a copy of `pm list packages`, `pm list packages -d`, `getprop` and `settings list secure|system|global`
 before changing anything (kept outside the repo, `backup/` is gitignored).
 
-## The clean launcher on Fire OS
+## The clean launcher on Fire OS: not worth it on this Stick
+
+Tried 2026-11-26 and removed again. On this Stick (Fire OS 7, Android 9) `home-return` works but is too slow: every
+Home press shows Amazon's home for about 4.5 s before the clean launcher appears (measured 4.38 to 4.66 s over four
+presses). The log shows why, right after the service's launch request:
+`W/ActivityManager: Activity start request from <uid> stopped`. Android 9 holds activity starts from background
+apps for about 5 s after a Home press, and the service has no way to lift that. The redirect itself fires within
+0.5 s; the screen change is what waits. The setup is removed (`local.homereturn` and `com.gathin.tvhome`
+uninstalled, accessibility settings back to `null`/`0`) and the Stick runs Amazon's launcher with the debloat only.
+
+Untried ideas: send the launch from an `AlarmManager` `PendingIntent` so system_server is the caller, or cover
+Amazon's home with an accessibility overlay for the 5 s. Neither is tested. The FX 55" (Android 11) did not show
+the delay in its notes, but that was not re-measured.
+
+What follows is the setup as it was done (proven on the Xiaomi FX 55", AFTNE4E43F):
 
 Fire OS does not hand the Home role to another launcher (`com.amazon.tv.launcher` is protected), so
 `launcher/build-and-install.sh` is the wrong tool here. What works (proven on the Xiaomi FX 55", AFTNE4E43F):
@@ -36,15 +50,12 @@ adb shell settings put secure accessibility_enabled 1
 
 ## Result on this Stick (2026-11-26)
 
-- `com.gathin.tvhome` 2.7-my-tv.1 and `local.homereturn` 1.1 installed with `pm install -r`; only
-  `local.homereturn/.HomeReturnService` enabled. From another app, one press of Home brings up the clean launcher
-  (`mResumedActivity` is `com.gathin.tvhome/.MainActivity`, screenshot confirmed). A reboot was not tested.
-- Dock package names on Fire OS differ from the defaults in `config.xml`: Prime Video is `com.amazon.firebat`
-  and YouTube is `com.amazon.firetv.youtube` (`com.amazon.amazonvideo.livingroom` and
-  `com.google.android.youtube.tv` are not installed). Netflix `com.netflix.ninja`, JioHotstar `in.startv.hotstar`.
-- Testing trap: `HomeReturn` logs `Amazon home again within 3000 ms: staying on it` when Home is pressed twice
-  within 3 s, and the Amazon home window also reports twice per press. Test with one press, from another app,
-  and wait several seconds between tries; rapid `input keyevent KEYCODE_HOME` calls look like a failure.
+- Final state: the debloat above only, Amazon's launcher as Home. About 2.6 GB storage and 224 MB RAM free afterwards.
+- When the clean launcher was installed, the dock needed Fire OS package names: Prime Video is `com.amazon.firebat` and
+  YouTube is `com.amazon.firetv.youtube` (the `config.xml` defaults `com.amazon.amazonvideo.livingroom` and
+  `com.google.android.youtube.tv` are not on a Stick). Netflix `com.netflix.ninja`, JioHotstar `in.startv.hotstar`.
+- Measure a redirect from the log, not by eye: the service's launch request is logged within 0.5 s, so "START"
+  lines make it look instant. Compare it with `am_set_resumed_activity` for `com.gathin.tvhome/.MainActivity`.
 - Use `screencap -p /sdcard/s.png` then `adb pull`, not `exec-out screencap`, for screenshots.
 
 ## Gotchas (each one cost time before)
