@@ -34,6 +34,19 @@ adb shell settings put secure enabled_accessibility_services "local.homereturn/.
 adb shell settings put secure accessibility_enabled 1
 ```
 
+## Result on this Stick (2026-11-26)
+
+- `com.gathin.tvhome` 2.7-my-tv.1 and `local.homereturn` 1.1 installed with `pm install -r`; only
+  `local.homereturn/.HomeReturnService` enabled. From another app, one press of Home brings up the clean launcher
+  (`mResumedActivity` is `com.gathin.tvhome/.MainActivity`, screenshot confirmed). A reboot was not tested.
+- Dock package names on Fire OS differ from the defaults in `config.xml`: Prime Video is `com.amazon.firebat`
+  and YouTube is `com.amazon.firetv.youtube` (`com.amazon.amazonvideo.livingroom` and
+  `com.google.android.youtube.tv` are not installed). Netflix `com.netflix.ninja`, JioHotstar `in.startv.hotstar`.
+- Testing trap: `HomeReturn` logs `Amazon home again within 3000 ms: staying on it` when Home is pressed twice
+  within 3 s, and the Amazon home window also reports twice per press. Test with one press, from another app,
+  and wait several seconds between tries; rapid `input keyevent KEYCODE_HOME` calls look like a failure.
+- Use `screencap -p /sdcard/s.png` then `adb pull`, not `exec-out screencap`, for screenshots.
+
 ## Gotchas (each one cost time before)
 
 - **Check the APK before installing it.** A `local.homereturn` build once had no service class:
